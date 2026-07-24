@@ -6,7 +6,6 @@ import 'package:project/models/notification_model.dart';
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
-
 /// A single notification row shown in the Notifications screen.
 ///
 /// Shows an icon matching the notification [type], the title/message,
