@@ -1,0 +1,49 @@
+name: project
+description: "AssetFlow – Smart Department Asset Management System for IMCG F/6-2 Islamabad, Computer Science Department."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management (MVVM ViewModels extend ChangeNotifier)
+  provider: ^6.1.2
+
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  firebase_storage: ^12.3.4
+  firebase_messaging: ^15.1.3
+
+  # UI / Typography
+  google_fonts: ^6.2.1
+  cupertino_icons: ^1.0.8
+
+  # Utilities (used by upcoming service layer: image picking for asset
+  # photos, local persistence for session state, connectivity checks)
+  shared_preferences: ^2.3.2
+  intl: ^0.19.0
+  image_picker: ^1.1.2
+
+  # Asset Management module
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+
+  # Reports, Analytics & Notifications module
+  fl_chart: ^0.69.0
+  pdf: ^3.11.1
+  printing: ^5.13.4
+  path_provider: ^2.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
