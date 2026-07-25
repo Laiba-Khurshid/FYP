@@ -324,8 +324,3 @@ class AppRoutes {
   }
 }
 
-class ReportDetailsScreen {
-}
-
-class ComplaintDetailsScreen {
-}
