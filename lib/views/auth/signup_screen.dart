@@ -2,20 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:project/routes/app_routes.dart';
+
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 import 'package:project/core/utils/validators.dart';
+
 import 'package:project/viewmodels/auth_viewmodel.dart';
+
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
 
 /// The Signup screen for AssetFlow.
 ///
 /// Collects full name, email, password, confirm password, department,
-/// and role, validates all fields, and delegates account creation to
-/// [AuthViewModel.signUp]. On success, routes directly to the
-/// role-appropriate dashboard (new accounts are logged in immediately).
+/// role, and either a Roll Number (Students) or Employee ID (every
+/// other role), validates all fields, and delegates account creation to
+/// [AuthViewModel.signUp]. Registration is refused unless that
+/// identifier matches an authorized-users record. On success, the new
+/// account is Pending — the user is routed back to Login with a message
+/// explaining an Admin must approve them first.
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -29,6 +35,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _identifierController = TextEditingController();
 
   String _selectedRole = AppConstants.roleStudent;
   final String _department = AppConstants.departmentName;
@@ -48,8 +55,11 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _identifierController.dispose();
     super.dispose();
   }
+
+  bool get _isStudentRole => _selectedRole == AppConstants.roleStudent;
 
   Future<void> _handleSignup(AuthViewModel authViewModel) async {
     FocusScope.of(context).unfocus();
@@ -61,18 +71,36 @@ class _SignupScreenState extends State<SignupScreen> {
       password: _passwordController.text,
       role: _selectedRole,
       department: _department,
+      rollNumber: _isStudentRole ? _identifierController.text : null,
+      employeeId: _isStudentRole ? null : _identifierController.text,
     );
 
     if (!mounted) return;
 
-    if (success && authViewModel.currentUser != null) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.dashboardForRole(authViewModel.currentUser!.role),
-            (route) => false,
+    if (success) {
+      Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+      _showSuccess(
+        'Registration successful! Your account is pending admin approval — you\'ll be able to log in once approved.',
       );
     } else if (authViewModel.errorMessage != null) {
       _showError(authViewModel.errorMessage!);
     }
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message, style: AppStyles.bodyMedium(color: AppColors.textOnPrimary)),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 5),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+          ),
+        ),
+      );
   }
 
   void _showError(String message) {
@@ -114,7 +142,7 @@ class _SignupScreenState extends State<SignupScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Join CS AssetFlow',
+                  'Join AssetFlow',
                   style: AppStyles.heading2(),
                 ),
                 const SizedBox(height: AppConstants.paddingXSmall),
@@ -165,6 +193,17 @@ class _SignupScreenState extends State<SignupScreen> {
                 _buildDepartmentField(),
                 const SizedBox(height: AppConstants.paddingMedium),
                 _buildRoleSelector(),
+                const SizedBox(height: AppConstants.paddingMedium),
+                CustomTextField(
+                  label: _isStudentRole ? 'Roll Number' : 'Employee ID',
+                  hint: _isStudentRole ? 'e.g. F21-BSCS-045' : 'e.g. EMP-1042',
+                  controller: _identifierController,
+                  prefixIcon: Icons.badge_outlined,
+                  validator: (value) => Validators.validateRequired(
+                    value,
+                    fieldName: _isStudentRole ? 'Roll number' : 'Employee ID',
+                  ),
+                ),
                 const SizedBox(height: AppConstants.paddingXLarge),
                 CustomButton(
                   label: 'Create Account',
@@ -218,7 +257,6 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  /// Updated to use a lighter text color (AppColors.textSecondary) instead of default black.
   Widget _buildRoleSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,16 +275,11 @@ class _SignupScreenState extends State<SignupScreen> {
               value: _selectedRole,
               isExpanded: true,
               icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
-              // ✅ Fix: set text color for selected item
-              style: AppStyles.bodyLarge().copyWith(color: AppColors.textSecondary),
+              style: AppStyles.bodyLarge(),
               items: AppConstants.allRoles.map((role) {
                 return DropdownMenuItem<String>(
                   value: role,
-                  child: Text(
-                    _roleLabels[role] ?? role,
-                    // ✅ Fix: set text color for menu items
-                    style: AppStyles.bodyLarge().copyWith(color: AppColors.textSecondary),
-                  ),
+                  child: Text(_roleLabels[role] ?? role),
                 );
               }).toList(),
               onChanged: (value) {

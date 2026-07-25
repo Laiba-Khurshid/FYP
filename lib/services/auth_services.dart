@@ -2,8 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:project/models/user_model.dart';
+import '../models/user_model.dart';
 import 'package:project/core/utils/app_constants.dart';
+import 'package:project/services/notification_service.dart';
+
 /// A custom, UI-friendly exception thrown by [AuthService].
 ///
 /// Wraps the raw [FirebaseAuthException] (or any other failure) into a
@@ -28,12 +30,15 @@ class AuthException implements Exception {
 class AuthService {
   final FirebaseAuth _firebaseAuth;
   final FirebaseFirestore _firestore;
+  final NotificationService _notificationService;
 
   AuthService({
     FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
+    NotificationService? notificationService,
   })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+        _firestore = firestore ?? FirebaseFirestore.instance,
+        _notificationService = notificationService ?? NotificationService();
 
   /// The currently authenticated Firebase user, if any.
   User? get currentFirebaseUser => _firebaseAuth.currentUser;
@@ -45,6 +50,9 @@ class AuthService {
   CollectionReference<Map<String, dynamic>> get _usersRef =>
       _firestore.collection(AppConstants.usersCollection);
 
+  CollectionReference<Map<String, dynamic>> get _authorizedUsersRef =>
+      _firestore.collection(AppConstants.authenticatedUsersCollection);
+
   // -----------------------------------------------------------------
   // Sign up
   // -----------------------------------------------------------------
@@ -52,14 +60,43 @@ class AuthService {
   /// Creates a new Firebase Authentication account and a matching
   /// `users/{uid}` Firestore document, then returns the resulting
   /// [UserModel].
+  ///
+  /// Before creating anything, verifies that [rollNumber] (Students) or
+  /// [employeeId] (every other role) exists in the `authenticated_users`
+  /// allow-list — if no matching, active record is found, registration
+  /// is refused with "You are not authorized to register." The new
+  /// account then starts with `verificationStatus` = Pending; an Admin
+  /// must approve it (via the Verify Users screen) before it can log in.
   Future<UserModel> signUp({
     required String fullName,
     required String email,
     required String password,
     required String role,
     required String department,
+    String? rollNumber,
+    String? employeeId,
   }) async {
     try {
+      final isStudent = role == AppConstants.roleStudent;
+      final identifier = isStudent ? rollNumber?.trim() : employeeId?.trim();
+
+      if (identifier == null || identifier.isEmpty) {
+        throw AuthException(
+          isStudent ? 'Roll number is required to register.' : 'Employee ID is required to register.',
+        );
+      }
+
+      final authorizedQuery = await _authorizedUsersRef
+          .where(isStudent ? 'rollNumber' : 'employeeId', isEqualTo: identifier)
+          .where('role', isEqualTo: role)
+          .where('isActive', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (authorizedQuery.docs.isEmpty) {
+        throw const AuthException('You are not authorized to register.');
+      }
+
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
@@ -80,13 +117,22 @@ class AuthService {
         department: department,
         createdAt: DateTime.now(),
         profileImage: null,
+        rollNumber: isStudent ? identifier : null,
+        employeeId: isStudent ? null : identifier,
+        verificationStatus: AppConstants.verificationPending,
       );
 
       await _usersRef.doc(uid).set(userModel.toMap());
 
+      // Link the authorized-users record to the account that used it,
+      // so it can't be reused for a second registration.
+      await authorizedQuery.docs.first.reference.update({'uid': uid});
+
       return userModel;
     } on FirebaseAuthException catch (e) {
       throw AuthException(_mapFirebaseAuthError(e));
+    } on AuthException {
+      rethrow;
     } catch (_) {
       throw const AuthException(
         'Something went wrong while creating your account. Please try again.',
@@ -100,6 +146,11 @@ class AuthService {
 
   /// Signs the user in with email and password, then loads their
   /// [UserModel] from Firestore.
+  ///
+  /// If the account's `verificationStatus` is not Approved, the sign-in
+  /// is reversed immediately (the user is signed back out) and a clear
+  /// explanation is thrown — Pending or Rejected accounts must never
+  /// reach the rest of the app.
   Future<UserModel> signIn({
     required String email,
     required String password,
@@ -115,9 +166,26 @@ class AuthService {
         throw const AuthException('Login failed. Please try again.');
       }
 
-      return await fetchUserData(uid);
+      final user = await fetchUserData(uid);
+
+      if (user.isPending) {
+        await _firebaseAuth.signOut();
+        throw const AuthException(
+          'Your account is pending admin approval. Please check back soon.',
+        );
+      }
+      if (user.isRejected) {
+        await _firebaseAuth.signOut();
+        throw const AuthException(
+          'Your registration was not approved. Please contact your administrator.',
+        );
+      }
+
+      return user;
     } on FirebaseAuthException catch (e) {
       throw AuthException(_mapFirebaseAuthError(e));
+    } on AuthException {
+      rethrow;
     } catch (_) {
       throw const AuthException('Unable to log in. Please try again.');
     }
@@ -151,6 +219,80 @@ class AuthService {
       throw const AuthException('No signed-in user to refresh.');
     }
     return fetchUserData(uid);
+  }
+
+  /// Adds a new entry to the `authenticated_users` allow-list, so
+  /// someone with this [rollNumber] (Students) or [employeeId] (every
+  /// other role) is permitted to register. Used by the Admin-only
+  /// "Add Authorized User" action on the Verify Users screen.
+  Future<void> addAuthorizedUser({
+    String? rollNumber,
+    String? employeeId,
+    required String role,
+    required String department,
+  }) async {
+    final isStudent = role == AppConstants.roleStudent;
+    final identifier = isStudent ? rollNumber?.trim() : employeeId?.trim();
+    if (identifier == null || identifier.isEmpty) {
+      throw const AuthException('An identifier is required.');
+    }
+    try {
+      await _authorizedUsersRef.add({
+        'uid': '',
+        'rollNumber': isStudent ? identifier : null,
+        'employeeId': isStudent ? null : identifier,
+        'role': role,
+        'department': department,
+        'isActive': true,
+      });
+    } on FirebaseException catch (e) {
+      throw AuthException(e.message ?? 'Could not add the authorized user.');
+    }
+  }
+
+  // -----------------------------------------------------------------
+  // User verification (Admin)
+  // -----------------------------------------------------------------
+
+  /// Streams every account currently awaiting approval, newest first.
+  Stream<List<UserModel>> streamPendingUsers() {
+    return _usersRef
+        .where('verificationStatus', isEqualTo: AppConstants.verificationPending)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(UserModel.fromDocument).toList());
+  }
+
+  /// Approves a pending account, allowing it to log in.
+  Future<void> approveUser(String uid) async {
+    try {
+      await _usersRef.doc(uid).update({'verificationStatus': AppConstants.verificationApproved});
+      await _notificationService.notify(
+        title: 'Account Approved',
+        message: 'Your account has been approved. You can now log in.',
+        type: AppConstants.notificationTypeAccountApproved,
+        userId: uid,
+        relatedId: uid,
+      );
+    } on FirebaseException catch (e) {
+      throw AuthException(e.message ?? 'Could not approve this account.');
+    }
+  }
+
+  /// Rejects a pending account, permanently blocking it from logging in.
+  Future<void> rejectUser(String uid) async {
+    try {
+      await _usersRef.doc(uid).update({'verificationStatus': AppConstants.verificationRejected});
+      await _notificationService.notify(
+        title: 'Registration Not Approved',
+        message: 'Your registration was not approved. Please contact your administrator.',
+        type: AppConstants.notificationTypeAccountRejected,
+        userId: uid,
+        relatedId: uid,
+      );
+    } on FirebaseException catch (e) {
+      throw AuthException(e.message ?? 'Could not reject this account.');
+    }
   }
 
   // -----------------------------------------------------------------

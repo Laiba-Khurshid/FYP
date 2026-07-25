@@ -173,6 +173,8 @@ class AppConstants {
   static const String notificationTypeComplaintEscalated = 'complaint_escalated';
   static const String notificationTypeMaintenanceCreated = 'maintenance_created';
   static const String notificationTypeMaintenanceCompleted = 'maintenance_completed';
+  static const String notificationTypeAccountApproved = 'account_approved';
+  static const String notificationTypeAccountRejected = 'account_rejected';
 
   // ---------------------------------------------------------------------
   // Audit log modules and actions

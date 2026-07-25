@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/user_model.dart';
-import '../services/auth_services.dart';
+import 'package:project/models/user_model.dart';
+import 'package:project/services/auth_services.dart';
 
 /// The various states the authentication flow can be in.
 ///
@@ -66,8 +66,15 @@ class AuthViewModel extends ChangeNotifier {
       final remembered = await _authService.hasRememberedSession();
 
       if (firebaseUser != null && remembered) {
-        _currentUser = await _authService.fetchUserData(firebaseUser.uid);
-        _status = AuthStatus.authenticated;
+        final user = await _authService.fetchUserData(firebaseUser.uid);
+        if (!user.isApproved) {
+          await _authService.signOut();
+          _currentUser = null;
+          _status = AuthStatus.unauthenticated;
+        } else {
+          _currentUser = user;
+          _status = AuthStatus.authenticated;
+        }
       } else {
         if (firebaseUser != null && !remembered) {
           await _authService.signOut();
@@ -114,29 +121,39 @@ class AuthViewModel extends ChangeNotifier {
   // Signup
   // -----------------------------------------------------------------
 
-  /// Registers a new account and Firestore profile. Returns `true` on
-  /// success so the calling screen can navigate to the correct
-  /// role-based dashboard.
+  /// Registers a new account and Firestore profile.
+  ///
+  /// New accounts start `verificationStatus` = Pending, so this
+  /// deliberately does NOT authenticate the user or navigate to a
+  /// dashboard — it signs the freshly-created Firebase session back out
+  /// and leaves [status] as [AuthStatus.unauthenticated]. Returns `true`
+  /// on success so the calling screen can show a "pending approval"
+  /// message and route back to Login; `false` (with [errorMessage] set)
+  /// on failure, e.g. an unrecognized roll number/employee ID.
   Future<bool> signUp({
     required String fullName,
     required String email,
     required String password,
     required String role,
     required String department,
+    String? rollNumber,
+    String? employeeId,
   }) async {
     _errorMessage = null;
     _setLoading(true);
     try {
-      final user = await _authService.signUp(
+      await _authService.signUp(
         fullName: fullName,
         email: email,
         password: password,
         role: role,
         department: department,
+        rollNumber: rollNumber,
+        employeeId: employeeId,
       );
-      await _authService.saveSession(uid: user.uid, role: user.role, rememberMe: true);
-      _currentUser = user;
-      _status = AuthStatus.authenticated;
+      await _authService.signOut();
+      _currentUser = null;
+      _status = AuthStatus.unauthenticated;
       return true;
     } on AuthException catch (e) {
       _errorMessage = e.message;
@@ -189,6 +206,59 @@ class AuthViewModel extends ChangeNotifier {
     } catch (_) {
       // Keep showing the last known profile; the pull-to-refresh
       // indicator simply completes without visible error.
+    }
+  }
+
+  // -----------------------------------------------------------------
+  // User verification (Admin)
+  // -----------------------------------------------------------------
+
+  /// Pre-authorizes a roll number/employee ID so that person can
+  /// register. Returns `true` on success.
+  Future<bool> addAuthorizedUser({
+    String? rollNumber,
+    String? employeeId,
+    required String role,
+    required String department,
+  }) async {
+    try {
+      await _authService.addAuthorizedUser(
+        rollNumber: rollNumber,
+        employeeId: employeeId,
+        role: role,
+        department: department,
+      );
+      return true;
+    } on AuthException catch (e) {
+      _errorMessage = e.message;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Streams every account awaiting approval — used by the Verify
+  /// Users screen (Admin-only).
+  Stream<List<UserModel>> streamPendingUsers() => _authService.streamPendingUsers();
+
+  Future<bool> approveUser(String uid) async {
+    try {
+      await _authService.approveUser(uid);
+      return true;
+    } on AuthException catch (e) {
+      _errorMessage = e.message;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> rejectUser(String uid) async {
+    try {
+      await _authService.rejectUser(uid);
+      return true;
+    } on AuthException catch (e) {
+      _errorMessage = e.message;
+      notifyListeners();
+      return false;
     }
   }
 
