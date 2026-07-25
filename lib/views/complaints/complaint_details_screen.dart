@@ -1,170 +1,146 @@
-import 'dart:io';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import 'package:project/models/asset_model.dart';
+import 'package:project/models/complaint_model.dart';
+
+import 'package:project/routes/app_routes.dart';
 
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
-import 'package:project/core/utils/constants.dart';
-import 'package:project/core/utils/validators.dart';
 
-import 'package:project/viewmodels/asset_viewmodel.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/viewmodels/complaint_viewmodel.dart';
 
+import 'package:project/widgets/complaint_status_chip.dart';
 import 'package:project/widgets/custom_button.dart';
-import 'package:project/widgets/custom_textfield.dart';
-/// The Add Complaint screen for AssetFlow (Student/Teacher).
+
+/// The Complaint Details screen for AssetFlow.
 ///
-/// Walks the reporter through an intelligent, dependent selection flow:
-/// pick a Lab → the asset list for that lab loads live from Firestore →
-/// pick an Asset → if the asset is individually tracked, pick one of its
-/// live Asset Codes; if it's a bulk asset, enter the affected quantity →
-/// describe the issue → optionally attach a photo → pick a priority →
-/// submit. All Firestore/Storage work is delegated to
-/// [ComplaintViewModel.addComplaint].
-class AddComplaintScreen extends StatefulWidget {
-  const AddComplaintScreen({super.key});
+/// Shows the full complaint record — asset identity, description,
+/// optional photo, a visual status timeline, and who it's assigned to —
+/// plus, for HOD/Admin, the actions to update its status or escalate it
+/// up the HOD → Vice Principal → Principal chain.
+class ComplaintDetailsScreen extends StatefulWidget {
+  final ComplaintModel complaint;
+
+  const ComplaintDetailsScreen({super.key, required this.complaint});
 
   @override
-  State<AddComplaintScreen> createState() => _AddComplaintScreenState();
+  State<ComplaintDetailsScreen> createState() => _ComplaintDetailsScreenState();
 }
 
-class _AddComplaintScreenState extends State<AddComplaintScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _descriptionController = TextEditingController();
-  final _affectedQuantityController = TextEditingController();
+class _ComplaintDetailsScreenState extends State<ComplaintDetailsScreen> {
+  late ComplaintModel _complaint;
 
-  String? _selectedLab;
-  AssetModel? _selectedAsset;
-  String? _selectedAssetCode;
-  String _priority = AppConstants.priorityMedium;
-  File? _pickedImageFile;
+  static const List<String> _statusSteps = [
+    AppConstants.statusPending,
+    AppConstants.statusInProgress,
+    AppConstants.statusResolved,
+  ];
+
+  static const Map<String, String> _roleLabels = {
+    AppConstants.roleAdmin: 'Admin',
+    AppConstants.roleHOD: 'HOD',
+    AppConstants.roleVicePrincipal: 'Vice Principal',
+    AppConstants.rolePrincipal: 'Principal',
+    AppConstants.roleTeacher: 'Teacher',
+    AppConstants.roleStudent: 'Student',
+  };
 
   @override
-  void dispose() {
-    _descriptionController.dispose();
-    _affectedQuantityController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _complaint = widget.complaint;
   }
 
-  bool get _assetIsTracked =>
-      _selectedAsset != null && AssetConstants.isTrackedCategory(_selectedAsset!.category);
+  bool _canManage(String? role) => role == AppConstants.roleAdmin || role == AppConstants.roleHOD;
 
-  void _onLabChanged(String? lab) {
-    setState(() {
-      _selectedLab = lab;
-      _selectedAsset = null;
-      _selectedAssetCode = null;
-      _affectedQuantityController.clear();
-    });
+  String _roleLabel(String role) => _roleLabels[role] ?? role;
+
+  Future<void> _updateStatus(ComplaintViewModel viewModel, String status) async {
+    final actor = context.read<AuthViewModel>().currentUser;
+    final success = await viewModel.updateStatus(
+      _complaint,
+      status,
+      actorId: actor?.uid ?? '',
+      actorName: actor?.fullName ?? '',
+      actorRole: actor?.role ?? '',
+    );
+    if (!mounted) return;
+    if (success) {
+      setState(() => _complaint = _complaint.copyWith(status: status, updatedAt: DateTime.now()));
+      _showSnack('Status updated to ${_statusLabel(status)}.');
+    } else {
+      _showSnack(viewModel.errorMessage ?? 'Could not update status.', isError: true);
+    }
   }
 
-  void _onAssetChanged(AssetModel? asset) {
-    setState(() {
-      _selectedAsset = asset;
-      _selectedAssetCode = null;
-      _affectedQuantityController.clear();
-    });
-  }
+  Future<void> _confirmEscalate(ComplaintViewModel viewModel) async {
+    final nextLevel = _complaint.escalationLevel + 1;
+    final nextRole = nextLevel == AppConstants.escalationLevelVicePrincipal
+        ? AppConstants.roleVicePrincipal
+        : AppConstants.rolePrincipal;
 
-  Future<void> _pickImage() async {
-    final source = await _chooseImageSource();
-    if (source == null) return;
-
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source, imageQuality: 80, maxWidth: 1600);
-    if (picked == null) return;
-
-    setState(() => _pickedImageFile = File(picked.path));
-  }
-
-  Future<ImageSource?> _chooseImageSource() {
-    return showModalBottomSheet<ImageSource>(
+    final confirmed = await showDialog<bool>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SafeArea(
-        child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppConstants.borderRadiusXLarge)),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: AppConstants.paddingLarge),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined, color: AppColors.primary),
-                title: Text('Take a Photo', style: AppStyles.bodyMedium()),
-                onTap: () => Navigator.of(context).pop(ImageSource.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
-                title: Text('Choose from Gallery', style: AppStyles.bodyMedium()),
-                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
-              ),
-            ],
-          ),
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge)),
+        title: Text('Escalate Complaint?', style: AppStyles.heading4()),
+        content: Text(
+          'This will escalate the complaint to the ${_roleLabel(nextRole)} and mark it as Escalated. This cannot be undone.',
+          style: AppStyles.bodyMedium(color: AppColors.textSecondary),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text('Cancel', style: AppStyles.bodyMedium()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text('Escalate', style: AppStyles.bodyMedium(color: AppColors.error)),
+          ),
+        ],
       ),
     );
+
+    if (confirmed != true || !mounted) return;
+
+    final actor = context.read<AuthViewModel>().currentUser;
+    final success = await viewModel.escalateComplaint(
+      _complaint,
+      actorId: actor?.uid ?? '',
+      actorName: actor?.fullName ?? '',
+      actorRole: actor?.role ?? '',
+    );
+    if (!mounted) return;
+    if (success) {
+      setState(() => _complaint = _complaint.copyWith(
+        status: AppConstants.statusEscalated,
+        escalationLevel: nextLevel,
+        assignedTo: nextRole,
+        updatedAt: DateTime.now(),
+      ));
+      _showSnack('Complaint escalated to ${_roleLabel(nextRole)}.');
+    } else {
+      _showSnack(viewModel.errorMessage ?? 'Could not escalate complaint.', isError: true);
+    }
   }
 
-  Future<void> _handleSubmit(ComplaintViewModel complaintViewModel, AuthViewModel authViewModel) async {
-    FocusScope.of(context).unfocus();
-
-    if (_selectedLab == null) {
-      _showSnack('Please select a lab.', isError: true);
-      return;
-    }
-    if (_selectedAsset == null) {
-      _showSnack('Please select an asset.', isError: true);
-      return;
-    }
-    if (_assetIsTracked && _selectedAssetCode == null) {
-      _showSnack('Please select an Asset Code.', isError: true);
-      return;
-    }
-    if (!_formKey.currentState!.validate()) return;
-
-    final user = authViewModel.currentUser;
-    if (user == null) {
-      _showSnack('Your session has expired. Please log in again.', isError: true);
-      return;
-    }
-
-    // The complaints collection has a fixed 16-field schema with no
-    // dedicated "affected quantity" field, so for bulk assets that
-    // figure is recorded as a clear prefix on the description instead.
-    final description = _assetIsTracked
-        ? _descriptionController.text.trim()
-        : 'Affected Quantity: ${_affectedQuantityController.text.trim()}\n\n${_descriptionController.text.trim()}';
-
-    final success = await complaintViewModel.addComplaint(
-      assetId: _selectedAsset!.assetId,
-      assetCode: _assetIsTracked ? _selectedAssetCode : null,
-      assetName: _selectedAsset!.assetName,
-      category: _selectedAsset!.category,
-      labName: _selectedLab!,
-      reportedBy: user.uid,
-      reportedByName: user.fullName,
-      userRole: user.role,
-      description: description,
-      priority: _priority,
-      imageFile: _pickedImageFile,
-    );
-
-    if (!mounted) return;
-
-    if (success) {
-      Navigator.of(context).pop();
-      _showSnack('Your complaint was submitted successfully.');
-    } else {
-      _showSnack(complaintViewModel.errorMessage ?? 'Could not submit the complaint. Please try again.', isError: true);
+  String _statusLabel(String status) {
+    switch (status) {
+      case AppConstants.statusPending:
+        return 'Pending';
+      case AppConstants.statusInProgress:
+        return 'In Progress';
+      case AppConstants.statusResolved:
+        return 'Resolved';
+      case AppConstants.statusEscalated:
+        return 'Escalated';
+      default:
+        return status;
     }
   }
 
@@ -185,274 +161,254 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
   @override
   Widget build(BuildContext context) {
     final complaintViewModel = context.watch<ComplaintViewModel>();
-    final authViewModel = context.watch<AuthViewModel>();
-    final assetViewModel = context.watch<AssetViewModel>();
-
-    final labAssets = _selectedLab == null
-        ? <AssetModel>[]
-        : assetViewModel.allAssets.where((a) => a.labName == _selectedLab).toList();
+    final role = context.watch<AuthViewModel>().currentUser?.role;
+    final canManage = _canManage(role);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text('Submit Complaint', style: AppStyles.heading4())),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.paddingLarge),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: AppColors.surface,
+      appBar: AppBar(title: Text('Complaint Details', style: AppStyles.heading4())),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppConstants.paddingLarge),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_complaint.imageUrl != null && _complaint.imageUrl!.isNotEmpty) ...[
+              _buildImage(),
+              const SizedBox(height: AppConstants.paddingLarge),
+            ],
+            Row(
               children: [
-                Text('1. Select Lab', style: AppStyles.label()),
-                const SizedBox(height: AppConstants.paddingSmall),
-                _buildDropdown<String>(
-                  hint: 'Choose a lab',
-                  value: _selectedLab,
-                  items: AssetConstants.labs,
-                  labelBuilder: (lab) => lab,
-                  onChanged: _onLabChanged,
-                ),
-                const SizedBox(height: AppConstants.paddingLarge),
-                Text('2. Select Asset', style: AppStyles.label()),
-                const SizedBox(height: AppConstants.paddingSmall),
-                if (_selectedLab == null)
-                  _buildHint('Select a lab first to load its assets.')
-                else if (assetViewModel.isLoading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppConstants.paddingMedium),
-                    child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-                  )
-                else if (labAssets.isEmpty)
-                    _buildHint('No assets are recorded for this lab yet.')
-                  else
-                    _buildDropdown<AssetModel>(
-                      hint: 'Choose an asset',
-                      value: _selectedAsset,
-                      items: labAssets,
-                      labelBuilder: (asset) => '${asset.assetName} (${asset.category})',
-                      onChanged: _onAssetChanged,
-                    ),
-                if (_selectedAsset != null) ...[
-                  const SizedBox(height: AppConstants.paddingLarge),
-                  Text(
-                    _assetIsTracked ? '3. Select Asset Code' : '3. Affected Quantity',
-                    style: AppStyles.label(),
+                Expanded(
+                  child: Text(
+                    _complaint.assetCode != null && _complaint.assetCode!.isNotEmpty
+                        ? '${_complaint.assetName} • ${_complaint.assetCode}'
+                        : _complaint.assetName,
+                    style: AppStyles.heading2(),
                   ),
-                  const SizedBox(height: AppConstants.paddingSmall),
-                  _assetIsTracked ? _buildAssetCodePicker(assetViewModel) : _buildAffectedQuantityField(),
-                ],
-                const SizedBox(height: AppConstants.paddingLarge),
-                Text('4. Describe the Issue', style: AppStyles.label()),
-                const SizedBox(height: AppConstants.paddingSmall),
-                CustomTextField(
-                  label: '',
-                  hint: 'What is wrong with this asset?',
-                  controller: _descriptionController,
-                  maxLines: 4,
-                  validator: Validators.validateDescription,
                 ),
-                const SizedBox(height: AppConstants.paddingLarge),
-                Text('5. Attach a Photo (Optional)', style: AppStyles.label()),
-                const SizedBox(height: AppConstants.paddingSmall),
-                _buildImagePicker(),
-                const SizedBox(height: AppConstants.paddingLarge),
-                Text('6. Priority', style: AppStyles.label()),
-                const SizedBox(height: AppConstants.paddingSmall),
-                _buildPrioritySelector(),
-                const SizedBox(height: AppConstants.paddingXLarge),
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        label: 'Cancel',
-                        type: CustomButtonType.outline,
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    const SizedBox(width: AppConstants.paddingMedium),
-                    Expanded(
-                      child: CustomButton(
-                        label: 'Submit',
-                        isLoading: complaintViewModel.isSubmitting,
-                        onPressed: () => _handleSubmit(complaintViewModel, authViewModel),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppConstants.paddingLarge),
+                ComplaintPriorityChip(priority: _complaint.priority),
               ],
             ),
+            const SizedBox(height: 4),
+            Text('Complaint ID: ${_complaint.complaintId}', style: AppStyles.label(color: AppColors.primary)),
+            const SizedBox(height: AppConstants.paddingLarge),
+            _buildStatusTimeline(),
+            const SizedBox(height: AppConstants.paddingLarge),
+            Text('Description', style: AppStyles.heading4()),
+            const SizedBox(height: AppConstants.paddingSmall),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppConstants.paddingMedium),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Text(_complaint.description, style: AppStyles.bodyMedium()),
+            ),
+            const SizedBox(height: AppConstants.paddingLarge),
+            _buildInfoCard(),
+            if (role == AppConstants.roleAdmin && _complaint.status == AppConstants.statusInProgress) ...[
+              const SizedBox(height: AppConstants.paddingXLarge),
+              CustomButton(
+                label: 'Create Maintenance Record',
+                icon: Icons.build_rounded,
+                type: CustomButtonType.secondary,
+                onPressed: () => Navigator.of(context).pushNamed(AppRoutes.addMaintenance, arguments: _complaint),
+              ),
+            ],
+            if (canManage) ...[
+              const SizedBox(height: AppConstants.paddingXLarge),
+              Text('Manage Complaint', style: AppStyles.heading4()),
+              const SizedBox(height: AppConstants.paddingMedium),
+              _buildManagementActions(complaintViewModel),
+            ],
+            const SizedBox(height: AppConstants.paddingLarge),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImage() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppConstants.borderRadiusXLarge),
+      child: AspectRatio(
+        aspectRatio: 16 / 10,
+        child: CachedNetworkImage(
+          imageUrl: _complaint.imageUrl!,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            color: AppColors.surface,
+            child: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: AppColors.surface,
+            child: const Center(child: Icon(Icons.broken_image_outlined, size: 48, color: AppColors.textHint)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHint(String message) {
+  Widget _buildStatusTimeline() {
+    final isEscalated = _complaint.status == AppConstants.statusEscalated;
+    final currentIndex = isEscalated ? _statusSteps.length : _statusSteps.indexOf(_complaint.status);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.paddingMedium),
       decoration: BoxDecoration(
-        color: AppColors.divider,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: isEscalated
+          ? Row(
         children: [
-          const Icon(Icons.info_outline_rounded, color: AppColors.textSecondary, size: AppConstants.iconSizeMedium),
+          const Icon(Icons.priority_high_rounded, color: AppColors.statusEscalated),
           const SizedBox(width: AppConstants.paddingSmall),
-          Expanded(child: Text(message, style: AppStyles.bodySmall(color: AppColors.textSecondary))),
+          Expanded(
+            child: Text(
+              'This complaint has been escalated to ${_roleLabel(_complaint.assignedTo)}.',
+              style: AppStyles.bodyMedium(color: AppColors.statusEscalated).copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      )
+          : Row(
+        children: List.generate(_statusSteps.length, (index) {
+          final isDone = index <= currentIndex;
+          final isLast = index == _statusSteps.length - 1;
+          return Expanded(
+            child: Row(
+              children: [
+                Column(
+                  children: [
+                    Container(
+                      height: 26,
+                      width: 26,
+                      decoration: BoxDecoration(
+                        color: isDone ? AppColors.primary : AppColors.divider,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isDone ? Icons.check_rounded : Icons.circle,
+                        size: isDone ? 16 : 8,
+                        color: isDone ? AppColors.textOnPrimary : AppColors.textHint,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _statusLabel(_statusSteps[index]),
+                      textAlign: TextAlign.center,
+                      style: AppStyles.caption(color: isDone ? AppColors.primary : AppColors.textHint),
+                    ),
+                  ],
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      color: index < currentIndex ? AppColors.primary : AppColors.divider,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppConstants.paddingLarge),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          _buildInfoRow(Icons.category_outlined, 'Category', _complaint.category),
+          const Divider(height: AppConstants.paddingLarge),
+          _buildInfoRow(Icons.meeting_room_outlined, 'Lab', _complaint.labName),
+          const Divider(height: AppConstants.paddingLarge),
+          _buildInfoRow(Icons.person_outline_rounded, 'Reported By', _roleLabel(_complaint.userRole)),
+          const Divider(height: AppConstants.paddingLarge),
+          _buildInfoRow(Icons.assignment_ind_outlined, 'Assigned To', _roleLabel(_complaint.assignedTo)),
+          const Divider(height: AppConstants.paddingLarge),
+          _buildInfoRow(Icons.event_outlined, 'Filed On', DateFormat('MMMM d, y • h:mm a').format(_complaint.createdAt)),
+          const Divider(height: AppConstants.paddingLarge),
+          _buildInfoRow(Icons.update_rounded, 'Last Updated', DateFormat('MMMM d, y • h:mm a').format(_complaint.updatedAt)),
         ],
       ),
     );
   }
 
-  Widget _buildDropdown<T>({
-    required String hint,
-    required T? value,
-    required List<T> items,
-    required String Function(T item) labelBuilder,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          isExpanded: true,
-          hint: Text(hint, style: AppStyles.bodyMedium(color: AppColors.textHint)),
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
-          style: AppStyles.bodyLarge(),
-          items: items
-              .map((item) => DropdownMenuItem<T>(value: item, child: Text(labelBuilder(item))))
-              .toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAssetCodePicker(AssetViewModel assetViewModel) {
-    return StreamBuilder<List<AssetItemModel>>(
-      stream: assetViewModel.streamAssetItems(_selectedAsset!.assetId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppConstants.paddingMedium),
-            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-          );
-        }
-        final items = snapshot.data ?? [];
-        if (items.isEmpty) {
-          return _buildHint('No Asset Codes have been generated for this asset yet.');
-        }
-        return _buildDropdown<String>(
-          hint: 'Choose an Asset Code',
-          value: _selectedAssetCode,
-          items: items.map((item) => item.assetCode).toList(),
-          labelBuilder: (code) => code,
-          onChanged: (value) => setState(() => _selectedAssetCode = value),
-        );
-      },
-    );
-  }
-
-  Widget _buildAffectedQuantityField() {
-    final maxQuantity = _selectedAsset?.quantity ?? 1;
-    return CustomTextField(
-      label: '',
-      hint: 'e.g. 2 (out of $maxQuantity)',
-      controller: _affectedQuantityController,
-      keyboardType: TextInputType.number,
-      prefixIcon: Icons.pin_outlined,
-      validator: (value) {
-        final basic = Validators.validatePositiveNumber(value, fieldName: 'Affected quantity');
-        if (basic != null) return basic;
-        final parsed = int.tryParse(value!.trim());
-        if (parsed != null && parsed > maxQuantity) {
-          return 'Only $maxQuantity of this asset exist in this lab.';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildImagePicker() {
-    if (_pickedImageFile == null) {
-      return InkWell(
-        onTap: _pickImage,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: AppConstants.paddingLarge),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-            border: Border.all(color: AppColors.border, style: BorderStyle.solid),
-          ),
-          child: Column(
-            children: [
-              const Icon(Icons.add_a_photo_outlined, color: AppColors.primary, size: 32),
-              const SizedBox(height: AppConstants.paddingSmall),
-              Text('Upload Photo', style: AppStyles.bodyMedium(color: AppColors.primary)),
-            ],
-          ),
-        ),
-      );
-    }
-    return Stack(
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-          child: Image.file(_pickedImageFile!, height: 160, width: double.infinity, fit: BoxFit.cover),
-        ),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: GestureDetector(
-            onTap: () => setState(() => _pickedImageFile = null),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-              child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
-            ),
+        Icon(icon, size: 20, color: AppColors.primary),
+        const SizedBox(width: AppConstants.paddingMedium),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppStyles.caption()),
+              const SizedBox(height: 2),
+              Text(value, style: AppStyles.bodyLarge()),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPrioritySelector() {
-    return Row(
-      children: AppConstants.complaintPriorities.map((priority) {
-        final isSelected = _priority == priority;
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(right: AppConstants.paddingSmall),
-            child: GestureDetector(
-              onTap: () => setState(() => _priority = priority),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: AppConstants.paddingSmall + 2),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-                  border: Border.all(color: isSelected ? AppColors.primary : AppColors.border),
-                ),
-                child: Text(
-                  priority,
-                  textAlign: TextAlign.center,
-                  style: AppStyles.bodyMedium(color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary)
-                      .copyWith(fontWeight: FontWeight.w600),
-                ),
+  Widget _buildManagementActions(ComplaintViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Update Status', style: AppStyles.label()),
+        const SizedBox(height: AppConstants.paddingSmall),
+        Wrap(
+          spacing: AppConstants.paddingSmall,
+          runSpacing: AppConstants.paddingSmall,
+          children: _statusSteps.map((status) {
+            final isSelected = _complaint.status == status;
+            return ChoiceChip(
+              label: Text(_statusLabel(status)),
+              selected: isSelected,
+              onSelected: viewModel.isSubmitting || isSelected
+                  ? null
+                  : (_) => _updateStatus(viewModel, status),
+              selectedColor: AppColors.primary,
+              labelStyle: AppStyles.bodySmall(color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary),
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+                side: BorderSide(color: isSelected ? AppColors.primary : AppColors.border),
               ),
-            ),
+            );
+          }).toList(),
+        ),
+        if (_complaint.escalationLevel < AppConstants.escalationLevelPrincipal) ...[
+          const SizedBox(height: AppConstants.paddingLarge),
+          CustomButton(
+            label: _complaint.escalationLevel == AppConstants.escalationLevelNone
+                ? 'Escalate to Vice Principal'
+                : 'Escalate to Principal',
+            icon: Icons.priority_high_rounded,
+            type: CustomButtonType.danger,
+            isLoading: viewModel.isSubmitting,
+            onPressed: () => _confirmEscalate(viewModel),
           ),
-        );
-      }).toList(),
+        ],
+      ],
     );
   }
 }

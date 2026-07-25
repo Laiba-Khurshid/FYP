@@ -13,7 +13,6 @@ import 'package:project/viewmodels/theme_viewmodel.dart';
 
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/setting_tile.dart';
-
 /// The Settings screen for AssetFlow — available to every authenticated
 /// role.
 ///

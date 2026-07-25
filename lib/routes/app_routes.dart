@@ -89,6 +89,11 @@ class AppRoutes {
   // Notifications module route.
   static const String notificationsScreen = '/notifications';
 
+// Profile routes
+  static const String profileScreen = '/profile';
+  static const String editProfile = '/edit-profile';
+  static const String auditHistoryScreen = '/audit-history';
+
   // The following route names are reserved for upcoming phases of the
   // project and are intentionally NOT wired to real screens yet:
   // profile.
@@ -317,4 +322,10 @@ class AppRoutes {
     }
     return _buildRoute(builder(record), settings);
   }
+}
+
+class ReportDetailsScreen {
+}
+
+class ComplaintDetailsScreen {
 }

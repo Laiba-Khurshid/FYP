@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+
   # State management (MVVM ViewModels extend ChangeNotifier)
   provider: ^6.1.2
 
