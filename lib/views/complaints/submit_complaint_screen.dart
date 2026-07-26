@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -408,7 +408,19 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-          child: Image.file(_pickedImageFile!, height: 160, width: double.infinity, fit: BoxFit.cover),
+          child: kIsWeb
+              ? Image.network(
+            _pickedImageFile!.path,
+            height: 160,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          )
+              : Image.file(
+            File(_pickedImageFile!.path),
+            height: 160,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
         ),
         Positioned(
           top: 8,

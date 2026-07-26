@@ -97,7 +97,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () => _showComingSoon('Notifications'),
+            onPressed: () =>
+                Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
           ),
           const SizedBox(width: AppConstants.paddingSmall),
         ],
