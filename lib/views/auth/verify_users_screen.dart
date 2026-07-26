@@ -11,7 +11,6 @@ import 'package:project/core/utils/app_styles.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
 
 import 'package:project/widgets/custom_button.dart';
-
 /// The Verify Users screen for AssetFlow (Admin-only).
 ///
 /// Lists every account currently Pending, with a summary of who they
