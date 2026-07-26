@@ -13,6 +13,7 @@ import 'package:project/viewmodels/auth_viewmodel.dart';
 
 import 'package:project/widgets/asset_form.dart';
 import 'package:project/widgets/custom_button.dart';
+
 /// The Add Asset screen for AssetFlow (Admin/HOD only).
 ///
 /// Collects all fields required to create a new asset, optionally
@@ -35,7 +36,7 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
   String? _selectedCategory;
   String? _selectedLab;
   DateTime? _purchaseDate;
-  File? _pickedImageFile;
+  File? _pickedImageFile;  // Using File instead of Uint8List
 
   @override
   void dispose() {
@@ -53,7 +54,8 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
     final picked = await picker.pickImage(source: source, imageQuality: 80, maxWidth: 1600);
     if (picked == null) return;
 
-    setState(() => _pickedImageFile = File(picked.path));
+    final file = File(picked.path);
+    setState(() => _pickedImageFile = file);
   }
 
   Future<ImageSource?> _chooseImageSource() {
@@ -135,7 +137,7 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
       actorId: actor?.uid ?? '',
       actorName: actor?.fullName ?? '',
       actorRole: actor?.role ?? '',
-      imageFile: _pickedImageFile,
+      imageFile: _pickedImageFile,  // Passing File
     );
 
     if (!mounted) return;
@@ -189,7 +191,7 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
                   onLabChanged: (value) => setState(() => _selectedLab = value),
                   purchaseDate: _purchaseDate,
                   onPickDate: _pickPurchaseDate,
-                  pickedImageFile: _pickedImageFile,
+                  pickedImageFile: _pickedImageFile,  // Passing File
                   existingImageUrl: null,
                   onPickImage: _pickImage,
                   onRemoveImage: _pickedImageFile != null ? () => setState(() => _pickedImageFile = null) : null,

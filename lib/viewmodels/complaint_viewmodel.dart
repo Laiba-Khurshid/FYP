@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -186,6 +187,12 @@ class ComplaintViewModel extends ChangeNotifier {
     _errorMessage = null;
     _setSubmitting(true);
     try {
+      // Convert File to Uint8List for the service
+      Uint8List? imageBytes;
+      if (imageFile != null) {
+        imageBytes = await imageFile.readAsBytes();
+      }
+
       await _complaintService.addComplaint(
         assetId: assetId,
         assetCode: assetCode,
@@ -197,7 +204,7 @@ class ComplaintViewModel extends ChangeNotifier {
         userRole: userRole,
         description: description,
         priority: priority,
-        imageFile: imageFile,
+        imageBytes: imageBytes,
       );
       return true;
     } on ComplaintException catch (e) {

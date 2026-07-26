@@ -1,9 +1,11 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:project/models/user_model.dart';
+
 import 'package:project/core/utils/app_constants.dart';
+
 import 'package:project/services/notification_service.dart';
 
 /// A custom, UI-friendly exception thrown by [AuthService].
@@ -61,12 +63,15 @@ class AuthService {
   /// `users/{uid}` Firestore document, then returns the resulting
   /// [UserModel].
   ///
-  /// Before creating anything, verifies that [rollNumber] (Students) or
-  /// [employeeId] (every other role) exists in the `authenticated_users`
-  /// allow-list — if no matching, active record is found, registration
-  /// is refused with "You are not authorized to register." The new
-  /// account then starts with `verificationStatus` = Pending; an Admin
-  /// must approve it (via the Verify Users screen) before it can log in.
+  /// Only **Student** (via [rollNumber]) and **Teacher** (via
+  /// [employeeId]) registrations are gated: the identifier must exist in
+  /// the `authenticated_users` allow-list, or registration is refused
+  /// with "You are not authorized to register," and the new account
+  /// starts with `verificationStatus` = Pending until an Admin approves
+  /// it (via the Verify Users screen). HOD, Vice Principal, Principal,
+  /// and Admin accounts don't require a roll number/employee ID or an
+  /// allow-list entry — they're created with `verificationStatus` =
+  /// Approved immediately and can log in right away.
   Future<UserModel> signUp({
     required String fullName,
     required String email,
@@ -77,24 +82,31 @@ class AuthService {
     String? employeeId,
   }) async {
     try {
+      final requiresApproval = role == AppConstants.roleStudent || role == AppConstants.roleTeacher;
       final isStudent = role == AppConstants.roleStudent;
-      final identifier = isStudent ? rollNumber?.trim() : employeeId?.trim();
+      String? identifier;
+      DocumentSnapshot<Map<String, dynamic>>? authorizedDoc;
 
-      if (identifier == null || identifier.isEmpty) {
-        throw AuthException(
-          isStudent ? 'Roll number is required to register.' : 'Employee ID is required to register.',
-        );
-      }
+      if (requiresApproval) {
+        identifier = isStudent ? rollNumber?.trim() : employeeId?.trim();
 
-      final authorizedQuery = await _authorizedUsersRef
-          .where(isStudent ? 'rollNumber' : 'employeeId', isEqualTo: identifier)
-          .where('role', isEqualTo: role)
-          .where('isActive', isEqualTo: true)
-          .limit(1)
-          .get();
+        if (identifier == null || identifier.isEmpty) {
+          throw AuthException(
+            isStudent ? 'Roll number is required to register.' : 'Employee ID is required to register.',
+          );
+        }
 
-      if (authorizedQuery.docs.isEmpty) {
-        throw const AuthException('You are not authorized to register.');
+        final authorizedQuery = await _authorizedUsersRef
+            .where(isStudent ? 'rollNumber' : 'employeeId', isEqualTo: identifier)
+            .where('role', isEqualTo: role)
+            .where('isActive', isEqualTo: true)
+            .limit(1)
+            .get();
+
+        if (authorizedQuery.docs.isEmpty) {
+          throw const AuthException('You are not authorized to register.');
+        }
+        authorizedDoc = authorizedQuery.docs.first;
       }
 
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(
@@ -118,15 +130,17 @@ class AuthService {
         createdAt: DateTime.now(),
         profileImage: null,
         rollNumber: isStudent ? identifier : null,
-        employeeId: isStudent ? null : identifier,
-        verificationStatus: AppConstants.verificationPending,
+        employeeId: (requiresApproval && !isStudent) ? identifier : null,
+        verificationStatus: requiresApproval ? AppConstants.verificationPending : AppConstants.verificationApproved,
       );
 
       await _usersRef.doc(uid).set(userModel.toMap());
 
       // Link the authorized-users record to the account that used it,
       // so it can't be reused for a second registration.
-      await authorizedQuery.docs.first.reference.update({'uid': uid});
+      if (authorizedDoc != null) {
+        await authorizedDoc.reference.update({'uid': uid});
+      }
 
       return userModel;
     } on FirebaseAuthException catch (e) {

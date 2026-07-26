@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -14,7 +14,6 @@ import 'package:project/viewmodels/profile_viewmodel.dart';
 
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
-
 /// The Edit Profile screen for AssetFlow.
 ///
 /// Lets the signed-in user update their full name, phone number, and
@@ -33,7 +32,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
-  File? _pickedImage;
+  Uint8List? _pickedImageBytes;
   bool _removeImage = false;
   bool _initialized = false;
 
@@ -87,8 +86,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (source == null) return;
     final picked = await ImagePicker().pickImage(source: source, imageQuality: 80, maxWidth: 1000);
     if (picked != null) {
+      final bytes = await picked.readAsBytes();
       setState(() {
-        _pickedImage = File(picked.path);
+        _pickedImageBytes = bytes;
         _removeImage = false;
       });
     }
@@ -101,7 +101,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final updated = await viewModel.updateProfile(
       fullName: _nameController.text,
       phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text,
-      newProfileImage: _pickedImage,
+      newProfileImage: _pickedImageBytes,
       removeProfileImage: _removeImage,
     );
 
@@ -209,8 +209,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _buildAvatarPicker(dynamic profile) {
     ImageProvider? backgroundImage;
-    if (_pickedImage != null) {
-      backgroundImage = FileImage(_pickedImage!);
+    if (_pickedImageBytes != null) {
+      backgroundImage = MemoryImage(_pickedImageBytes!);
     } else if (!_removeImage && profile.profileImage != null && (profile.profileImage as String).isNotEmpty) {
       backgroundImage = NetworkImage(profile.profileImage as String);
     }

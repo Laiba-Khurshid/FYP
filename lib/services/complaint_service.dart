@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -69,34 +69,54 @@ class ComplaintService {
   ///   level.
   /// - Teacher, Student: only complaints they personally reported
   ///   (their own complaint history).
+  ///
+  /// Vice Principal/Principal filter with an inequality
+  /// (`escalationLevel >=`) on a field other than `createdAt`. Firestore
+  /// requires a composite index for `inequality filter + orderBy on a
+  /// different field` — rather than depending on that index existing
+  /// (and surfacing a raw `failed-precondition` exception if it
+  /// doesn't), those two roles' queries intentionally omit the
+  /// server-side `orderBy` and are sorted by `createdAt` client-side
+  /// instead. Admin/HOD (no filter) and Teacher/Student (a single
+  /// equality filter) are both automatically indexed by Firestore, so
+  /// they keep the more efficient server-side ordering.
   Stream<List<ComplaintModel>> streamComplaints({required String role, required String uid}) {
     Query<Map<String, dynamic>> query = _complaintsRef;
+    bool sortClientSide = false;
 
     switch (role) {
       case AppConstants.roleAdmin:
       case AppConstants.roleHOD:
-      // Full visibility — no filter.
+      // Full visibility — no filter; safe to sort server-side.
+        query = query.orderBy('createdAt', descending: true);
         break;
       case AppConstants.roleVicePrincipal:
         query = query.where(
           'escalationLevel',
           isGreaterThanOrEqualTo: AppConstants.escalationLevelVicePrincipal,
         );
+        sortClientSide = true;
         break;
       case AppConstants.rolePrincipal:
         query = query.where(
           'escalationLevel',
           isGreaterThanOrEqualTo: AppConstants.escalationLevelPrincipal,
         );
+        sortClientSide = true;
         break;
       default:
-      // Teacher / Student: only their own submissions.
-        query = query.where('reportedBy', isEqualTo: uid);
+      // Teacher / Student: only their own submissions — a single
+      // equality filter, safe to sort server-side.
+        query = query.where('reportedBy', isEqualTo: uid).orderBy('createdAt', descending: true);
     }
 
-    return query.orderBy('createdAt', descending: true).snapshots().map(
-          (snapshot) => snapshot.docs.map(ComplaintModel.fromDocument).toList(),
-    );
+    return query.snapshots().map((snapshot) {
+      final complaints = snapshot.docs.map(ComplaintModel.fromDocument).toList();
+      if (sortClientSide) {
+        complaints.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      }
+      return complaints;
+    });
   }
 
   /// Fetches a single complaint by [complaintId] (used to refresh a
@@ -134,15 +154,15 @@ class ComplaintService {
     required String userRole,
     required String description,
     required String priority,
-    File? imageFile,
+    Uint8List? imageBytes,
   }) async {
     try {
       final docRef = _complaintsRef.doc();
       final now = DateTime.now();
 
       String? imageUrl;
-      if (imageFile != null) {
-        imageUrl = await _uploadImage(imageFile, docRef.id);
+      if (imageBytes != null) {
+        imageUrl = await _uploadImage(imageBytes, docRef.id);
       }
 
       final complaint = ComplaintModel(
@@ -298,14 +318,14 @@ class ComplaintService {
   // Firebase Storage helpers
   // -----------------------------------------------------------------
 
-  Future<String> _uploadImage(File imageFile, String complaintId) async {
+  Future<String> _uploadImage(Uint8List imageBytes, String complaintId) async {
     try {
       final ref = _storage
           .ref()
           .child(AppConstants.complaintImagesStoragePath)
           .child('$complaintId.jpg');
-      final uploadTask = await ref.putFile(
-        imageFile,
+      final uploadTask = await ref.putData(
+        imageBytes,
         SettableMetadata(contentType: 'image/jpeg'),
       );
       return await uploadTask.ref.getDownloadURL();

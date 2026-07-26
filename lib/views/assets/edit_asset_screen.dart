@@ -194,7 +194,7 @@ class _EditAssetScreenState extends State<EditAssetScreen> {
                 Container(
                   padding: const EdgeInsets.all(AppConstants.paddingMedium),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.06),
+                    color: AppColors.primary.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
                   ),
                   child: Row(

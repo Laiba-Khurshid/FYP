@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -89,7 +89,7 @@ class AssetService {
   // -----------------------------------------------------------------
 
   /// Creates a new asset document (auto-assigning a sequential, friendly
-  /// [AssetModel.assetId] such as "AST001"), uploading [imageFile] first
+  /// [AssetModel.assetId] such as "AST001"), uploading [imageBytes] first
   /// (if provided), and — if [category] is individually tracked —
   /// generating `quantity` Asset Code documents in the `asset_items`
   /// subcollection.
@@ -103,14 +103,14 @@ class AssetService {
     required String actorId,
     required String actorName,
     required String actorRole,
-    File? imageFile,
+    Uint8List? imageBytes,
   }) async {
     try {
       final assetId = await _generateNextAssetId();
 
       String? imageUrl;
-      if (imageFile != null) {
-        imageUrl = await _uploadImage(imageFile, assetId);
+      if (imageBytes != null) {
+        imageUrl = await _uploadImage(imageBytes, assetId);
       }
 
       final asset = AssetModel(
@@ -175,17 +175,17 @@ class AssetService {
     required String actorId,
     required String actorName,
     required String actorRole,
-    File? newImageFile,
+    Uint8List? newImageBytes,
     bool removeImage = false,
   }) async {
     try {
       String? imageUrl = existingAsset.imageUrl;
 
-      if (newImageFile != null) {
+      if (newImageBytes != null) {
         if (existingAsset.imageUrl != null) {
           await _deleteImage(existingAsset.imageUrl!);
         }
-        imageUrl = await _uploadImage(newImageFile, existingAsset.assetId);
+        imageUrl = await _uploadImage(newImageBytes, existingAsset.assetId);
       } else if (removeImage && existingAsset.imageUrl != null) {
         await _deleteImage(existingAsset.imageUrl!);
         imageUrl = null;
@@ -334,14 +334,14 @@ class AssetService {
   // Firebase Storage helpers
   // -----------------------------------------------------------------
 
-  Future<String> _uploadImage(File imageFile, String assetId) async {
+  Future<String> _uploadImage(Uint8List imageBytes, String assetId) async {
     try {
       final ref = _storage
           .ref()
           .child(AppConstants.assetImagesStoragePath)
           .child('$assetId.jpg');
-      final uploadTask = await ref.putFile(
-        imageFile,
+      final uploadTask = await ref.putData(
+        imageBytes,
         SettableMetadata(contentType: 'image/jpeg'),
       );
       return await uploadTask.ref.getDownloadURL();

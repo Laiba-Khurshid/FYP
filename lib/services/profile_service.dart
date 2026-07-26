@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -8,6 +8,7 @@ import 'package:project/models/user_model.dart';
 import 'package:project/core/utils/app_constants.dart';
 
 import 'package:project/services/audit_service.dart';
+
 /// A custom, UI-friendly exception thrown by [ProfileService].
 class ProfileException implements Exception {
   final String message;
@@ -61,11 +62,16 @@ class ProfileService {
   /// Updates the editable fields of a user's profile: full name, phone
   /// number, and (optionally) a new profile picture. `email`, `role`,
   /// and `department` are never touched here.
+  ///
+  /// [newProfileImage] is raw image bytes (not a `dart:io File`) so this
+  /// works identically on Android and Flutter Web — the caller reads
+  /// bytes from the picked `XFile` via `readAsBytes()` regardless of
+  /// platform.
   Future<UserModel> updateProfile({
     required UserModel existing,
     required String fullName,
     String? phoneNumber,
-    File? newProfileImage,
+    Uint8List? newProfileImage,
     bool removeProfileImage = false,
   }) async {
     try {
@@ -111,10 +117,10 @@ class ProfileService {
     }
   }
 
-  Future<String> _uploadProfileImage(File imageFile, String uid) async {
+  Future<String> _uploadProfileImage(Uint8List imageBytes, String uid) async {
     try {
       final ref = _storage.ref().child('profile_images').child('$uid.jpg');
-      final uploadTask = await ref.putFile(imageFile, SettableMetadata(contentType: 'image/jpeg'));
+      final uploadTask = await ref.putData(imageBytes, SettableMetadata(contentType: 'image/jpeg'));
       return await uploadTask.ref.getDownloadURL();
     } on FirebaseException {
       throw const ProfileException('Could not upload your profile picture. Please try again.');

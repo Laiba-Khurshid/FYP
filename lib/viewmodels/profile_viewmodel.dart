@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -54,7 +54,7 @@ class ProfileViewModel extends ChangeNotifier {
   Future<UserModel?> updateProfile({
     required String fullName,
     String? phoneNumber,
-    File? newProfileImage,
+    Uint8List? newProfileImage,
     bool removeProfileImage = false,
   }) async {
     final current = _profile;

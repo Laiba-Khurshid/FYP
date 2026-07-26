@@ -121,15 +121,21 @@ class AuthViewModel extends ChangeNotifier {
   // Signup
   // -----------------------------------------------------------------
 
+  bool _lastSignupRequiresApproval = true;
+  bool get lastSignupRequiresApproval => _lastSignupRequiresApproval;
+
   /// Registers a new account and Firestore profile.
   ///
-  /// New accounts start `verificationStatus` = Pending, so this
-  /// deliberately does NOT authenticate the user or navigate to a
-  /// dashboard — it signs the freshly-created Firebase session back out
-  /// and leaves [status] as [AuthStatus.unauthenticated]. Returns `true`
-  /// on success so the calling screen can show a "pending approval"
-  /// message and route back to Login; `false` (with [errorMessage] set)
-  /// on failure, e.g. an unrecognized roll number/employee ID.
+  /// Student/Teacher accounts start `verificationStatus` = Pending and
+  /// cannot log in until approved; HOD/Vice Principal/Principal/Admin
+  /// accounts are Approved immediately. Either way, this deliberately
+  /// does NOT authenticate the user or navigate to a dashboard — it
+  /// signs the freshly-created Firebase session back out and leaves
+  /// [status] as [AuthStatus.unauthenticated], so the calling screen can
+  /// show an appropriate message (check [lastSignupRequiresApproval])
+  /// and route back to Login. Returns `true` on success; `false` (with
+  /// [errorMessage] set) on failure, e.g. an unrecognized roll
+  /// number/employee ID.
   Future<bool> signUp({
     required String fullName,
     required String email,
@@ -142,7 +148,7 @@ class AuthViewModel extends ChangeNotifier {
     _errorMessage = null;
     _setLoading(true);
     try {
-      await _authService.signUp(
+      final user = await _authService.signUp(
         fullName: fullName,
         email: email,
         password: password,
@@ -151,6 +157,7 @@ class AuthViewModel extends ChangeNotifier {
         rollNumber: rollNumber,
         employeeId: employeeId,
       );
+      _lastSignupRequiresApproval = !user.isApproved;
       await _authService.signOut();
       _currentUser = null;
       _status = AuthStatus.unauthenticated;

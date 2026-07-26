@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -194,6 +195,12 @@ class AssetViewModel extends ChangeNotifier {
     _errorMessage = null;
     _setSubmitting(true);
     try {
+      // Convert File to Uint8List for the service
+      Uint8List? imageBytes;
+      if (imageFile != null) {
+        imageBytes = await imageFile.readAsBytes();
+      }
+
       await _assetService.addAsset(
         assetName: assetName,
         category: category,
@@ -204,7 +211,7 @@ class AssetViewModel extends ChangeNotifier {
         actorId: actorId,
         actorName: actorName,
         actorRole: actorRole,
-        imageFile: imageFile,
+        imageBytes: imageBytes,
       );
       return true;
     } on AssetException catch (e) {
@@ -238,6 +245,12 @@ class AssetViewModel extends ChangeNotifier {
     _errorMessage = null;
     _setSubmitting(true);
     try {
+      // Convert File to Uint8List for the service
+      Uint8List? newImageBytes;
+      if (newImageFile != null) {
+        newImageBytes = await newImageFile.readAsBytes();
+      }
+
       await _assetService.updateAsset(
         existingAsset: existingAsset,
         assetName: assetName,
@@ -247,7 +260,7 @@ class AssetViewModel extends ChangeNotifier {
         actorId: actorId,
         actorName: actorName,
         actorRole: actorRole,
-        newImageFile: newImageFile,
+        newImageBytes: newImageBytes,
         removeImage: removeImage,
       );
       return true;

@@ -93,14 +93,17 @@ class MaintenanceService {
       chunks.add(allowedComplaintIds.sublist(i, end));
     }
 
-    // A single chunk (the common case for a small department) can be
-    // streamed directly and stays live-updating with server-side sort.
+    // `whereIn` combined with `orderBy` on a different field requires a
+    // composite index in Firestore. To avoid depending on a manually
+    // created index (and to avoid surfacing a raw `failed-precondition`
+    // exception if it's missing), sort by `createdAt` client-side
+    // instead — this applies whether there's one chunk or several.
     if (chunks.length == 1) {
-      return _maintenanceRef
-          .where('complaintId', whereIn: chunks.first)
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .map((snapshot) => snapshot.docs.map(MaintenanceModel.fromDocument).toList());
+      return _maintenanceRef.where('complaintId', whereIn: chunks.first).snapshots().map((snapshot) {
+        final records = snapshot.docs.map(MaintenanceModel.fromDocument).toList();
+        records.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return records;
+      });
     }
 
     // For more than 30 allowed complaints, merge multiple live streams

@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +19,7 @@ import 'package:project/viewmodels/complaint_viewmodel.dart';
 
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
+
 /// The Add Complaint screen for AssetFlow (Student/Teacher).
 ///
 /// Walks the reporter through an intelligent, dependent selection flow:
@@ -43,7 +45,7 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
   AssetModel? _selectedAsset;
   String? _selectedAssetCode;
   String _priority = AppConstants.priorityMedium;
-  File? _pickedImageFile;
+  File? _pickedImageFile;  // Changed: Uint8List? se File?
 
   @override
   void dispose() {
@@ -80,7 +82,8 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
     final picked = await picker.pickImage(source: source, imageQuality: 80, maxWidth: 1600);
     if (picked == null) return;
 
-    setState(() => _pickedImageFile = File(picked.path));
+    final file = File(picked.path);  // Changed: bytes read karna band
+    setState(() => _pickedImageFile = file);  // Changed: _pickedImageBytes se _pickedImageFile
   }
 
   Future<ImageSource?> _chooseImageSource() {
@@ -155,7 +158,7 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
       userRole: user.role,
       description: description,
       priority: _priority,
-      imageFile: _pickedImageFile,
+      imageFile: _pickedImageFile,  // Changed: imageBytes se imageFile
     );
 
     if (!mounted) return;
@@ -382,7 +385,7 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
   }
 
   Widget _buildImagePicker() {
-    if (_pickedImageFile == null) {
+    if (_pickedImageFile == null) {  // Changed: _pickedImageBytes se _pickedImageFile
       return InkWell(
         onTap: _pickImage,
         borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
@@ -408,15 +411,8 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-          child: kIsWeb
-              ? Image.network(
-            _pickedImageFile!.path,
-            height: 160,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          )
-              : Image.file(
-            File(_pickedImageFile!.path),
+          child: Image.file(  // Changed: Image.memory se Image.file
+            _pickedImageFile!,
             height: 160,
             width: double.infinity,
             fit: BoxFit.cover,
@@ -426,7 +422,7 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
           top: 8,
           right: 8,
           child: GestureDetector(
-            onTap: () => setState(() => _pickedImageFile = null),
+            onTap: () => setState(() => _pickedImageFile = null),  // Changed: _pickedImageBytes se _pickedImageFile
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),

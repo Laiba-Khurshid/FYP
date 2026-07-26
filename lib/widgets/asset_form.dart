@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -9,7 +10,9 @@ import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 import 'package:project/core/utils/constants.dart';
 import 'package:project/core/utils/validators.dart';
+
 import 'package:project/widgets/custom_textfield.dart';
+
 /// The shared set of form fields used by both the Add Asset and Edit
 /// Asset screens: Asset Name, Category, Lab, Quantity, Purchase Date,
 /// Location, and Image.
@@ -35,7 +38,7 @@ class AssetForm extends StatelessWidget {
   final DateTime? purchaseDate;
   final VoidCallback onPickDate;
 
-  final File? pickedImageFile;
+  final File? pickedImageFile;  // Changed from Uint8List? to File?
   final String? existingImageUrl;
   final VoidCallback onPickImage;
   final VoidCallback? onRemoveImage;
@@ -51,7 +54,7 @@ class AssetForm extends StatelessWidget {
     required this.selectedLab,
     required this.purchaseDate,
     required this.onPickDate,
-    required this.pickedImageFile,
+    required this.pickedImageFile,  // Changed from pickedImageBytes
     required this.existingImageUrl,
     required this.onPickImage,
     this.onCategoryChanged,
@@ -158,14 +161,29 @@ class AssetForm extends StatelessWidget {
 
   Widget _buildImagePreview() {
     if (pickedImageFile != null) {
-      return Image.file(pickedImageFile!, fit: BoxFit.cover);
+      // For newly picked image (works on both web & Android)
+      return Image.file(
+        pickedImageFile!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(
+            child: Icon(Icons.broken_image_outlined, color: AppColors.textHint),
+          );
+        },
+      );
     }
     if (existingImageUrl != null && existingImageUrl!.isNotEmpty) {
+      // For existing image from Firebase Storage
       return CachedNetworkImage(
         imageUrl: existingImageUrl!,
         fit: BoxFit.cover,
-        placeholder: (context, url) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        errorWidget: (context, url, error) => const Icon(Icons.broken_image_outlined, color: AppColors.textHint),
+        placeholder: (context, url) => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        errorWidget: (context, url, error) => const Icon(
+          Icons.broken_image_outlined,
+          color: AppColors.textHint,
+        ),
       );
     }
     return const Center(
