@@ -7,6 +7,7 @@ import 'package:project/models/report_model.dart';
 import 'package:project/services/report_service.dart';
 
 import 'package:project/core/utils/app_constants.dart';
+
 /// The ViewModel for the Reports & Dashboard Analytics module.
 ///
 /// Owns all UI-facing state and delegates every Firestore aggregation
@@ -41,24 +42,35 @@ class ReportViewModel extends ChangeNotifier {
   /// `AppConstants.reportTypeAssets/Complaints/Maintenance/Users`).
   Future<bool> generateReport(String reportType) async {
     _errorMessage = null;
+    _currentReport = null;
     _isLoading = true;
     notifyListeners();
 
     try {
+      final ReportModel generated;
       switch (reportType) {
         case AppConstants.reportTypeAssets:
-          _currentReport = await _reportService.generateAssetsReport();
+          generated = await _reportService.generateAssetsReport();
           break;
         case AppConstants.reportTypeComplaints:
-          _currentReport = await _reportService.generateComplaintsReport();
+          generated = await _reportService.generateComplaintsReport();
           break;
         case AppConstants.reportTypeMaintenance:
-          _currentReport = await _reportService.generateMaintenanceReport();
+          generated = await _reportService.generateMaintenanceReport();
           break;
         case AppConstants.reportTypeUsers:
-          _currentReport = await _reportService.generateUsersReport();
+          generated = await _reportService.generateUsersReport();
           break;
+        default:
+          throw ReportException('Unknown report type: $reportType');
       }
+      // Defensive check: guarantee the report we're about to expose
+      // actually matches what was requested before publishing it to
+      // the UI, so a stale/mismatched report can never be displayed.
+      if (generated.reportType != reportType) {
+        throw const ReportException('Could not generate the report. Please try again.');
+      }
+      _currentReport = generated;
       return true;
     } on ReportException catch (e) {
       _errorMessage = e.message;

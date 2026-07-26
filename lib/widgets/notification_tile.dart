@@ -6,6 +6,7 @@ import 'package:project/models/notification_model.dart';
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
+
 /// A single notification row shown in the Notifications screen.
 ///
 /// Shows an icon matching the notification [type], the title/message,
@@ -33,6 +34,10 @@ class NotificationTile extends StatelessWidget {
         return Icons.build_rounded;
       case AppConstants.notificationTypeMaintenanceCompleted:
         return Icons.build_circle_rounded;
+      case AppConstants.notificationTypeAccountApproved:
+        return Icons.verified_user_rounded;
+      case AppConstants.notificationTypeAccountRejected:
+        return Icons.gpp_bad_rounded;
       default:
         return Icons.notifications_rounded;
     }
@@ -52,6 +57,10 @@ class NotificationTile extends StatelessWidget {
         return AppColors.secondary;
       case AppConstants.notificationTypeMaintenanceCompleted:
         return AppColors.success;
+      case AppConstants.notificationTypeAccountApproved:
+        return AppColors.success;
+      case AppConstants.notificationTypeAccountRejected:
+        return AppColors.error;
       default:
         return AppColors.primary;
     }

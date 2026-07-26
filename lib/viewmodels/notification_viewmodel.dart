@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../models/notification_model.dart';
@@ -52,7 +53,9 @@ class NotificationViewModel extends ChangeNotifier {
       },
       onError: (error) {
         _isLoading = false;
-        _errorMessage = 'Could not load notifications. Please check your internet connection.';
+        _errorMessage = error is FirebaseException
+            ? (error.message ?? 'Firestore error (${error.code}). Please try again.')
+            : 'Could not load notifications. Please check your internet connection.';
         notifyListeners();
       },
     );

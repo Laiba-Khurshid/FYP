@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'package:project/models/maintenance_model.dart';
@@ -149,9 +150,13 @@ class MaintenanceViewModel extends ChangeNotifier {
 
   void _onError(Object error) {
     _isLoading = false;
-    _errorMessage = error is MaintenanceException
-        ? error.message
-        : 'Could not load maintenance records. Please check your internet connection.';
+    if (error is MaintenanceException) {
+      _errorMessage = error.message;
+    } else if (error is FirebaseException) {
+      _errorMessage = error.message ?? 'Firestore error (${error.code}). Please try again.';
+    } else {
+      _errorMessage = 'Could not load maintenance records. Please check your internet connection.';
+    }
     notifyListeners();
   }
 

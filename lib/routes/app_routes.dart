@@ -39,6 +39,16 @@ import 'package:project/views/reports/reports_screen.dart';
 import 'package:project/views/reports/report_details_screen.dart';
 
 import 'package:project/views/notifications/notifications_screen.dart';
+
+import 'package:project/views/profile/profile_screen.dart';
+import 'package:project/views/profile/edit_profile_screen.dart';
+
+import 'package:project/views/settings/setting_screen.dart';
+
+import 'package:project/views/audit/audit_history_screen.dart';
+
+import 'package:project/views/asset_manager/verify_user_screen.dart';
+
 /// Centralized route name constants and route generation for AssetFlow.
 ///
 /// Every navigable screen in the app must be registered here using a
@@ -89,14 +99,18 @@ class AppRoutes {
   // Notifications module route.
   static const String notificationsScreen = '/notifications';
 
-// Profile routes
+  // Profile Management module routes.
   static const String profileScreen = '/profile';
   static const String editProfile = '/edit-profile';
+
+  // Settings module route.
+  static const String settingsScreen = '/settings';
+
+  // Audit History module route (Admin-only).
   static const String auditHistoryScreen = '/audit-history';
 
-  // The following route names are reserved for upcoming phases of the
-  // project and are intentionally NOT wired to real screens yet:
-  // profile.
+  // User Verification module route (Admin-only).
+  static const String verifyUsersScreen = '/verify-users';
 
   /// Resolves the correct dashboard route for a given user [role] (read
   /// from Firestore via `UserModel.role` — never chosen manually).
@@ -238,6 +252,21 @@ class AppRoutes {
       case notificationsScreen:
         return _buildRoute(const NotificationScreen(), settings);
 
+      case profileScreen:
+        return _buildRoute(const ProfileScreen(), settings);
+
+      case editProfile:
+        return _buildRoute(const EditProfileScreen(), settings);
+
+      case settingsScreen:
+        return _buildRoute(const SettingsScreen(), settings);
+
+      case auditHistoryScreen:
+        return _buildRoute(const AuditHistoryScreen(), settings);
+
+      case verifyUsersScreen:
+        return _buildRoute(const VerifyUsersScreen(), settings);
+
       default:
         return _buildRoute(
           ErrorScreen(
@@ -323,4 +352,3 @@ class AppRoutes {
     return _buildRoute(builder(record), settings);
   }
 }
-

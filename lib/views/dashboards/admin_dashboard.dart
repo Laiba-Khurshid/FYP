@@ -16,6 +16,7 @@ import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
 import 'package:project/widgets/dashboard_stat_card.dart';
 import 'package:project/widgets/quick_action_card.dart';
+
 /// The Admin Dashboard for AssetFlow.
 ///
 /// Gives the Admin an at-a-glance overview of the department (total
@@ -92,6 +93,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
       Navigator.of(context).pushNamed(AppRoutes.complaintsScreen);
       return;
     }
+    if (_bottomNavItems[index].label == 'Profile') {
+      Navigator.of(context).pushNamed(AppRoutes.profileScreen);
+      return;
+    }
     _showComingSoon(_bottomNavItems[index].label);
   }
 
@@ -132,6 +137,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Navigator.of(context).pop();
             Navigator.of(context).pushNamed(AppRoutes.maintenanceList);
           }),
+          DrawerMenuItem(icon: Icons.verified_user_outlined, label: 'Verify Users', onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pushNamed(AppRoutes.verifyUsersScreen);
+          }),
           DrawerMenuItem(icon: Icons.bar_chart_outlined, label: 'Reports', onTap: () {
             Navigator.of(context).pop();
             Navigator.of(context).pushNamed(AppRoutes.reportsScreen);
@@ -140,7 +149,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Navigator.of(context).pop();
             Navigator.of(context).pushNamed(AppRoutes.notificationsScreen);
           }),
-          DrawerMenuItem(icon: Icons.person_outline_rounded, label: 'Profile', onTap: () => _closeDrawerThen('Profile')),
+          DrawerMenuItem(icon: Icons.person_outline_rounded, label: 'Profile', onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pushNamed(AppRoutes.profileScreen);
+          }),
           DrawerMenuItem(icon: Icons.settings_outlined, label: 'Settings', onTap: () => _closeDrawerThen('Settings')),
         ],
       ),
@@ -455,6 +467,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
           onTap: () => Navigator.of(context).pushNamed(AppRoutes.maintenanceList),
         ),
         QuickActionCard(
+          icon: Icons.verified_user_rounded,
+          title: 'Verify Users',
+          color: AppColors.info,
+          onTap: () => Navigator.of(context).pushNamed(AppRoutes.verifyUsersScreen),
+        ),
+        QuickActionCard(
           icon: Icons.bar_chart_rounded,
           title: 'Reports',
           color: AppColors.secondary,
@@ -470,7 +488,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           icon: Icons.person_rounded,
           title: 'Profile',
           color: AppColors.info,
-          onTap: () => _showComingSoon('Profile'),
+          onTap: () => Navigator.of(context).pushNamed(AppRoutes.profileScreen),
         ),
         QuickActionCard(
           icon: Icons.settings_rounded,

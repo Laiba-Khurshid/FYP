@@ -12,7 +12,6 @@ import 'package:project/viewmodels/auth_viewmodel.dart';
 
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
-
 /// The Signup screen for AssetFlow.
 ///
 /// Collects full name, email, password, confirm password, department,

@@ -13,6 +13,7 @@ import 'package:project/viewmodels/theme_viewmodel.dart';
 
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/setting_tile.dart';
+
 /// The Settings screen for AssetFlow — available to every authenticated
 /// role.
 ///
@@ -151,6 +152,13 @@ class SettingsScreen extends StatelessWidget {
                 title: 'Audit History',
                 subtitle: 'View a log of important system activity',
                 onTap: () => Navigator.of(context).pushNamed(AppRoutes.auditHistoryScreen),
+              ),
+              const SizedBox(height: AppConstants.paddingSmall),
+              SettingTile(
+                icon: Icons.verified_user_outlined,
+                title: 'Verify Users',
+                subtitle: 'Approve or reject pending registrations',
+                onTap: () => Navigator.of(context).pushNamed(AppRoutes.verifyUsersScreen),
               ),
               const SizedBox(height: AppConstants.paddingSmall),
               _buildAdminToolsCard(context),

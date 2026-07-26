@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../models/complaint_model.dart';
@@ -96,9 +97,16 @@ class ComplaintViewModel extends ChangeNotifier {
       },
       onError: (error) {
         _isLoading = false;
-        _errorMessage = error is ComplaintException
-            ? error.message
-            : 'Could not load complaints. Please check your internet connection.';
+        if (error is ComplaintException) {
+          _errorMessage = error.message;
+        } else if (error is FirebaseException) {
+          // Surface the real Firestore error (e.g. a missing composite
+          // index or a permissions rule) instead of a generic message
+          // that would otherwise hide the actual cause.
+          _errorMessage = error.message ?? 'Firestore error (${error.code}). Please try again.';
+        } else {
+          _errorMessage = 'Could not load complaints. Please check your internet connection.';
+        }
         notifyListeners();
       },
     );

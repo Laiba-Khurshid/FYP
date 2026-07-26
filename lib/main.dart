@@ -7,22 +7,29 @@ import 'package:project/firebase_options.dart';
 
 import 'package:project/routes/app_routes.dart';
 
+import 'package:project/services/admin_tools_service.dart';
 import 'package:project/services/asset_service.dart';
+import 'package:project/services/audit_service.dart';
 import 'package:project/services/auth_services.dart';
 import 'package:project/services/complaint_service.dart';
 import 'package:project/services/maintenance_service.dart';
 import 'package:project/services/notification_service.dart';
+import 'package:project/services/profile_service.dart';
 import 'package:project/services/report_service.dart';
 
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 
+import 'package:project/viewmodels/admin_tools_viewmodel.dart';
 import 'package:project/viewmodels/asset_viewmodel.dart';
+import 'package:project/viewmodels/audit_viewmodel.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/viewmodels/complaint_viewmodel.dart';
 import 'package:project/viewmodels/maintenance_viewmodel.dart';
 import 'package:project/viewmodels/notification_viewmodel.dart';
+import 'package:project/viewmodels/profile_viewmodel.dart';
 import 'package:project/viewmodels/report_viewmodel.dart';
+import 'package:project/viewmodels/theme_viewmodel.dart';
 
 import 'package:project/views/common/error_screen.dart';
 import 'package:project/views/common/loading_screen.dart';
@@ -110,9 +117,6 @@ class AssetFlowApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      // Feature-specific ChangeNotifierProviders (ProfileViewModel) will
-      // be registered here as that module is implemented in a later
-      // phase of this project.
       providers: [
         ChangeNotifierProvider<AuthViewModel>(
           create: (_) => AuthViewModel(authService: AuthService()),
@@ -135,15 +139,31 @@ class AssetFlowApp extends StatelessWidget {
         ChangeNotifierProvider<ReportViewModel>(
           create: (_) => ReportViewModel(reportService: ReportService()),
         ),
+        ChangeNotifierProvider<ProfileViewModel>(
+          create: (_) => ProfileViewModel(profileService: ProfileService()),
+        ),
+        ChangeNotifierProvider<AuditViewModel>(
+          create: (_) => AuditViewModel(auditService: AuditService()),
+        ),
+        ChangeNotifierProvider<AdminToolsViewModel>(
+          create: (_) => AdminToolsViewModel(adminToolsService: AdminToolsService()),
+        ),
+        ChangeNotifierProvider<ThemeViewModel>(
+          create: (_) => ThemeViewModel()..loadThemeMode(),
+        ),
       ],
-      child: MaterialApp(
-        title: AppConstants.appName,
-        debugShowCheckedModeBanner: false,
-        theme: _buildLightTheme(),
-        darkTheme: _buildDarkTheme(),
-        themeMode: ThemeMode.system,
-        initialRoute: AppRoutes.splash,
-        onGenerateRoute: AppRoutes.generateRoute,
+      child: Consumer<ThemeViewModel>(
+        builder: (context, themeViewModel, _) {
+          return MaterialApp(
+            title: AppConstants.appName,
+            debugShowCheckedModeBanner: false,
+            theme: _buildLightTheme(),
+            darkTheme: _buildDarkTheme(),
+            themeMode: themeViewModel.themeMode,
+            initialRoute: AppRoutes.splash,
+            onGenerateRoute: AppRoutes.generateRoute,
+          );
+        },
       ),
     );
   }
@@ -215,71 +235,16 @@ ThemeData _buildLightTheme() {
   );
 }
 
-/// Builds the dark [ThemeData] for AssetFlow using Material Design 3.
+/// Builds the "dark" [ThemeData] for AssetFlow.
 ///
-/// Registered on [MaterialApp.darkTheme] so the app automatically
-/// adapts to the system theme (themeMode: ThemeMode.system).
-ThemeData _buildDarkTheme() {
-  final baseTextTheme = GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme);
-
-  return ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    scaffoldBackgroundColor: AppColors.backgroundDark,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.dark,
-      primary: AppColors.primaryLight,
-      secondary: AppColors.secondary,
-      error: AppColors.error,
-      surface: AppColors.surfaceDark,
-    ),
-    textTheme: baseTextTheme.apply(
-      bodyColor: AppColors.textPrimaryDark,
-      displayColor: AppColors.textPrimaryDark,
-    ),
-    appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.backgroundDark,
-      foregroundColor: AppColors.textPrimaryDark,
-      elevation: 0,
-      centerTitle: true,
-      titleTextStyle: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimaryDark,
-      ),
-    ),
-    cardTheme: CardThemeData(
-      color: AppColors.cardDark,
-      elevation: 1,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primaryLight,
-        foregroundColor: AppColors.textOnPrimary,
-        elevation: 0,
-        minimumSize: const Size.fromHeight(AppConstants.buttonHeight),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        ),
-      ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: AppColors.surfaceDark,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        borderSide: BorderSide.none,
-      ),
-    ),
-    dividerTheme: const DividerThemeData(
-      color: AppColors.borderDark,
-      thickness: 1,
-    ),
-    fontFamily: GoogleFonts.poppins().fontFamily,
-  );
-}
+/// Currently identical to [_buildLightTheme]. The custom widget library
+/// throughout this app (cards, dropdowns, chips, dialogs, etc.) is
+/// built on fixed [AppColors] brand constants rather than
+/// [Theme.of(context).colorScheme], so a genuinely divergent dark theme
+/// would leave Flutter's built-in chrome (Scaffold, AppBar) dark while
+/// every custom surface stayed light-colored — exactly the "black,
+/// unreadable text" bug this was causing. Keeping both themes identical
+/// removes that mismatch entirely (regardless of device system theme or
+/// the in-app Settings selection) until the design system is refactored
+/// to be theme-aware.
+ThemeData _buildDarkTheme() => _buildLightTheme();
