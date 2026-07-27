@@ -77,6 +77,10 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       Navigator.of(context).pushNamed(AppRoutes.complaintsScreen);
       return;
     }
+    if (_bottomNavItems[index].label == 'Profile') {
+      Navigator.of(context).pushNamed(AppRoutes.profileScreen);
+      return;
+    }
     _showComingSoon(_bottomNavItems[index].label);
   }
 
@@ -97,7 +101,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () => _showComingSoon('Notifications'),
+            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
           ),
           const SizedBox(width: AppConstants.paddingSmall),
         ],
@@ -121,8 +125,18 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             Navigator.of(context).pop();
             Navigator.of(context).pushNamed(AppRoutes.complaintsScreen);
           }),
-          DrawerMenuItem(icon: Icons.notifications_none_rounded, label: 'Notifications', onTap: () => _closeDrawerThen('Notifications')),
-          DrawerMenuItem(icon: Icons.person_outline_rounded, label: 'Profile', onTap: () => _closeDrawerThen('Profile')),
+          DrawerMenuItem(icon: Icons.notifications_none_rounded, label: 'Notifications', onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pushNamed(AppRoutes.notificationsScreen);
+          }),
+          DrawerMenuItem(icon: Icons.person_outline_rounded, label: 'Profile', onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pushNamed(AppRoutes.profileScreen);
+          }),
+          DrawerMenuItem(icon: Icons.settings_outlined, label: 'Settings', onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pushNamed(AppRoutes.settingsScreen);
+          }),
         ],
       ),
       body: RefreshIndicator(
@@ -146,7 +160,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               title: 'Notifications',
               subtitle: 'Stay updated on your complaint status',
               iconColor: AppColors.accent,
-              onTap: () => _showComingSoon('Notifications'),
+              onTap: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
             ),
             const SizedBox(height: AppConstants.paddingMedium),
             DashboardCard(
@@ -154,7 +168,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               title: 'Profile',
               subtitle: 'View and edit your account details',
               iconColor: AppColors.info,
-              onTap: () => _showComingSoon('Profile'),
+              onTap: () => Navigator.of(context).pushNamed(AppRoutes.profileScreen),
             ),
             const SizedBox(height: AppConstants.paddingMedium),
             DashboardCard(
@@ -224,7 +238,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           title: 'Notifications',
           subtitle: 'Recent updates',
           color: AppColors.accent,
-          onTap: () => _showComingSoon('Notifications'),
+          onTap: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
         ),
       ],
     );

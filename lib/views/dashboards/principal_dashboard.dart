@@ -79,6 +79,10 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
       Navigator.of(context).pushNamed(AppRoutes.reportsScreen);
       return;
     }
+    if (_bottomNavItems[index].label == 'Profile') {
+      Navigator.of(context).pushNamed(AppRoutes.profileScreen);
+      return;
+    }
     _showComingSoon(_bottomNavItems[index].label);
   }
 
@@ -123,7 +127,14 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
             Navigator.of(context).pop();
             Navigator.of(context).pushNamed(AppRoutes.notificationsScreen);
           }),
-          DrawerMenuItem(icon: Icons.person_outline_rounded, label: 'Profile', onTap: () => _closeDrawerThen('Profile')),
+          DrawerMenuItem(icon: Icons.person_outline_rounded, label: 'Profile', onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pushNamed(AppRoutes.profileScreen);
+          }),
+          DrawerMenuItem(icon: Icons.settings_outlined, label: 'Settings', onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pushNamed(AppRoutes.settingsScreen);
+          }),
         ],
       ),
       body: RefreshIndicator(

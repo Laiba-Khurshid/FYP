@@ -247,6 +247,9 @@ class AuthViewModel extends ChangeNotifier {
   /// Users screen (Admin-only).
   Stream<List<UserModel>> streamPendingUsers() => _authService.streamPendingUsers();
 
+  /// ✅ FIX: Added this method – streams approved users.
+  Stream<List<UserModel>> streamApprovedUsers() => _authService.streamApprovedUsers();
+
   Future<bool> approveUser(String uid) async {
     try {
       await _authService.approveUser(uid);

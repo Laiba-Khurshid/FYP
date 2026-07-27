@@ -3,23 +3,30 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'package:project/models/user_model.dart';
-
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
-
 import 'package:project/viewmodels/auth_viewmodel.dart';
-
 import 'package:project/widgets/custom_button.dart';
 
 /// The Verify Users screen for AssetFlow (Admin-only).
 ///
-/// Lists every account currently Pending, with a summary of who they
-/// are (role, roll number/employee ID, department) and Approve/Reject
-/// actions. Only Approved accounts can log in — enforced by
-/// [AuthService.signIn] and [AuthViewModel.tryAutoLogin], not just here.
-class VerifyUsersScreen extends StatelessWidget {
+/// Two tabs: **Pending** (awaiting Approve/Reject) and **Approved**
+/// (already-active accounts, browsable/searchable for reference). A
+/// search bar filters either tab client-side by name, email, role, or
+/// roll number/employee ID. Only Approved accounts can log in —
+/// enforced by [AuthService.signIn] and [AuthViewModel.tryAutoLogin],
+/// not just here.
+class VerifyUsersScreen extends StatefulWidget {
   const VerifyUsersScreen({super.key});
+
+  @override
+  State<VerifyUsersScreen> createState() => _VerifyUsersScreenState();
+}
+
+class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  String _searchQuery = '';
 
   static const Map<String, String> _roleLabels = {
     AppConstants.roleAdmin: 'Admin',
@@ -29,6 +36,30 @@ class VerifyUsersScreen extends StatelessWidget {
     AppConstants.roleTeacher: 'Teacher',
     AppConstants.roleStudent: 'Student',
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  List<UserModel> _filter(List<UserModel> users) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return users;
+    return users.where((user) {
+      final identifier = (user.isStudent ? user.rollNumber : user.employeeId) ?? '';
+      return user.fullName.toLowerCase().contains(query) ||
+          user.email.toLowerCase().contains(query) ||
+          (_roleLabels[user.role] ?? user.role).toLowerCase().contains(query) ||
+          identifier.toLowerCase().contains(query);
+    }).toList();
+  }
 
   Future<void> _handleApprove(BuildContext context, AuthViewModel viewModel, UserModel user) async {
     final success = await viewModel.approveUser(user.uid);
@@ -92,61 +123,143 @@ class VerifyUsersScreen extends StatelessWidget {
             onPressed: () => _showAddAuthorizedUserDialog(context, authViewModel),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primary,
+          labelStyle: AppStyles.label(),
+          tabs: const [
+            Tab(text: 'Pending'),
+            Tab(text: 'Approved'),
+          ],
+        ),
       ),
       body: SafeArea(
-        child: StreamBuilder<List<UserModel>>(
-          stream: authViewModel.streamPendingUsers(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-            }
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  'Could not load pending registrations.',
-                  style: AppStyles.bodyMedium(color: AppColors.textSecondary),
-                ),
-              );
-            }
-
-            final pendingUsers = snapshot.data ?? [];
-            if (pendingUsers.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.verified_user_outlined, size: 56, color: AppColors.textHint),
-                      const SizedBox(height: AppConstants.paddingMedium),
-                      Text('No pending registrations', style: AppStyles.heading4()),
-                      const SizedBox(height: AppConstants.paddingSmall),
-                      Text(
-                        'New signups awaiting approval will show up here.',
-                        style: AppStyles.bodyMedium(color: AppColors.textSecondary),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppConstants.paddingLarge,
+                AppConstants.paddingMedium,
+                AppConstants.paddingLarge,
+                AppConstants.paddingSmall,
+              ),
+              child: _buildSearchBar(),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildUserList(
+                    stream: authViewModel.streamPendingUsers(),
+                    viewModel: authViewModel,
+                    isPendingTab: true,
+                    emptyIcon: Icons.verified_user_outlined,
+                    emptyTitle: 'No pending registrations',
+                    emptyMessage: 'New signups awaiting approval will show up here.',
                   ),
-                ),
-              );
-            }
-
-            return ListView.separated(
-              padding: const EdgeInsets.all(AppConstants.paddingLarge),
-              itemCount: pendingUsers.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppConstants.paddingMedium),
-              itemBuilder: (context, index) => _buildUserCard(context, authViewModel, pendingUsers[index]),
-            );
-          },
+                  _buildUserList(
+                    stream: authViewModel.streamApprovedUsers(),
+                    viewModel: authViewModel,
+                    isPendingTab: false,
+                    emptyIcon: Icons.people_outline_rounded,
+                    emptyTitle: 'No approved users yet',
+                    emptyMessage: 'Approved accounts will show up here.',
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildUserCard(BuildContext context, AuthViewModel viewModel, UserModel user) {
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: TextField(
+        onChanged: (value) => setState(() => _searchQuery = value),
+        style: AppStyles.bodyMedium(),
+        decoration: InputDecoration(
+          hintText: 'Search by name, email, role, or ID',
+          hintStyle: AppStyles.bodyMedium(color: AppColors.textHint),
+          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: AppConstants.paddingMedium),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserList({
+    required Stream<List<UserModel>> stream,
+    required AuthViewModel viewModel,
+    required bool isPendingTab,
+    required IconData emptyIcon,
+    required String emptyTitle,
+    required String emptyMessage,
+  }) {
+    return StreamBuilder<List<UserModel>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Could not load users.',
+              style: AppStyles.bodyMedium(color: AppColors.textSecondary),
+            ),
+          );
+        }
+
+        final users = _filter(snapshot.data ?? []);
+        if (users.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppConstants.paddingLarge),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(emptyIcon, size: 56, color: AppColors.textHint),
+                  const SizedBox(height: AppConstants.paddingMedium),
+                  Text(
+                    _searchQuery.isNotEmpty ? 'No matching users' : emptyTitle,
+                    style: AppStyles.heading4(),
+                  ),
+                  const SizedBox(height: AppConstants.paddingSmall),
+                  Text(
+                    _searchQuery.isNotEmpty ? 'Try a different search term.' : emptyMessage,
+                    style: AppStyles.bodyMedium(color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(AppConstants.paddingLarge),
+          itemCount: users.length,
+          separatorBuilder: (_, __) => const SizedBox(height: AppConstants.paddingMedium),
+          itemBuilder: (context, index) => _buildUserCard(context, viewModel, users[index], isPendingTab),
+        );
+      },
+    );
+  }
+
+  Widget _buildUserCard(BuildContext context, AuthViewModel viewModel, UserModel user, bool isPendingTab) {
     final isStudent = user.isStudent;
     final identifier = isStudent ? user.rollNumber : user.employeeId;
+    final statusColor = isPendingTab ? AppColors.statusPending : AppColors.success;
 
     return Container(
       padding: const EdgeInsets.all(AppConstants.paddingMedium),
@@ -162,7 +275,7 @@ class VerifyUsersScreen extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 22,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1), // FIXED
                 child: Text(
                   user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
                   style: AppStyles.heading4(color: AppColors.primary),
@@ -182,10 +295,10 @@ class VerifyUsersScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.statusPending.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1), // FIXED
                   borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
                 ),
-                child: Text(_roleLabels[user.role] ?? user.role, style: AppStyles.caption(color: AppColors.statusPending)),
+                child: Text(_roleLabels[user.role] ?? user.role, style: AppStyles.caption(color: statusColor)),
               ),
             ],
           ),
@@ -194,29 +307,32 @@ class VerifyUsersScreen extends StatelessWidget {
             spacing: 12,
             runSpacing: 4,
             children: [
-              Text('${isStudent ? 'Roll #' : 'Emp. ID'}: ${identifier ?? '—'}', style: AppStyles.caption()),
+              if (identifier != null && identifier.isNotEmpty)
+                Text('${isStudent ? 'Roll #' : 'Emp. ID'}: $identifier', style: AppStyles.caption()),
               Text('Requested: ${DateFormat('MMM d, y').format(user.createdAt)}', style: AppStyles.caption()),
             ],
           ),
-          const SizedBox(height: AppConstants.paddingMedium),
-          Row(
-            children: [
-              Expanded(
-                child: CustomButton(
-                  label: 'Reject',
-                  type: CustomButtonType.outline,
-                  onPressed: () => _handleReject(context, viewModel, user),
+          if (isPendingTab) ...[
+            const SizedBox(height: AppConstants.paddingMedium),
+            Row(
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    label: 'Reject',
+                    type: CustomButtonType.outline,
+                    onPressed: () => _handleReject(context, viewModel, user),
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppConstants.paddingMedium),
-              Expanded(
-                child: CustomButton(
-                  label: 'Approve',
-                  onPressed: () => _handleApprove(context, viewModel, user),
+                const SizedBox(width: AppConstants.paddingMedium),
+                Expanded(
+                  child: CustomButton(
+                    label: 'Approve',
+                    onPressed: () => _handleApprove(context, viewModel, user),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -224,7 +340,11 @@ class VerifyUsersScreen extends StatelessWidget {
 
   Future<void> _showAddAuthorizedUserDialog(BuildContext context, AuthViewModel viewModel) async {
     final identifierController = TextEditingController();
+    // Only Student and Teacher registrations are gated by the
+    // authenticated_users allow-list — HOD/VP/Principal/Admin never
+    // need a pre-authorization entry.
     String selectedRole = AppConstants.roleStudent;
+    const eligibleRoles = [AppConstants.roleStudent, AppConstants.roleTeacher];
 
     await showDialog<void>(
       context: context,
@@ -243,7 +363,7 @@ class VerifyUsersScreen extends StatelessWidget {
                 DropdownButton<String>(
                   value: selectedRole,
                   isExpanded: true,
-                  items: AppConstants.allRoles
+                  items: eligibleRoles
                       .map((role) => DropdownMenuItem<String>(value: role, child: Text(_roleLabels[role] ?? role)))
                       .toList(),
                   onChanged: (value) {

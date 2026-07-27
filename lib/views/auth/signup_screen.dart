@@ -12,15 +12,18 @@ import 'package:project/viewmodels/auth_viewmodel.dart';
 
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
+
 /// The Signup screen for AssetFlow.
 ///
 /// Collects full name, email, password, confirm password, department,
-/// role, and either a Roll Number (Students) or Employee ID (every
-/// other role), validates all fields, and delegates account creation to
-/// [AuthViewModel.signUp]. Registration is refused unless that
-/// identifier matches an authorized-users record. On success, the new
-/// account is Pending — the user is routed back to Login with a message
-/// explaining an Admin must approve them first.
+/// and role. Only **Student** additionally shows a Roll Number field,
+/// and only **Teacher** additionally shows an Employee ID field — HOD,
+/// Vice Principal, Principal, and Admin show neither, since only
+/// Student/Teacher registrations are gated by the authorized-users
+/// allow-list. On success, Student/Teacher accounts are Pending (an
+/// Admin must approve them first); every other role is Approved
+/// immediately. Either way, the user is routed back to Login with an
+/// appropriate message.
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -59,6 +62,12 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   bool get _isStudentRole => _selectedRole == AppConstants.roleStudent;
+  bool get _isTeacherRole => _selectedRole == AppConstants.roleTeacher;
+
+  /// Only Student and Teacher registrations are gated by an identifier
+  /// + the authorized-users allow-list + admin approval. HOD, Vice
+  /// Principal, Principal, and Admin need neither.
+  bool get _requiresIdentifier => _isStudentRole || _isTeacherRole;
 
   Future<void> _handleSignup(AuthViewModel authViewModel) async {
     FocusScope.of(context).unfocus();
@@ -71,7 +80,7 @@ class _SignupScreenState extends State<SignupScreen> {
       role: _selectedRole,
       department: _department,
       rollNumber: _isStudentRole ? _identifierController.text : null,
-      employeeId: _isStudentRole ? null : _identifierController.text,
+      employeeId: _isTeacherRole ? _identifierController.text : null,
     );
 
     if (!mounted) return;
@@ -79,7 +88,9 @@ class _SignupScreenState extends State<SignupScreen> {
     if (success) {
       Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
       _showSuccess(
-        'Registration successful! Your account is pending admin approval — you\'ll be able to log in once approved.',
+        _requiresIdentifier
+            ? 'Registration successful! Your account is pending admin approval — you\'ll be able to log in once approved.'
+            : 'Registration successful! You can now log in.',
       );
     } else if (authViewModel.errorMessage != null) {
       _showError(authViewModel.errorMessage!);
@@ -192,17 +203,22 @@ class _SignupScreenState extends State<SignupScreen> {
                 _buildDepartmentField(),
                 const SizedBox(height: AppConstants.paddingMedium),
                 _buildRoleSelector(),
-                const SizedBox(height: AppConstants.paddingMedium),
-                CustomTextField(
-                  label: _isStudentRole ? 'Roll Number' : 'Employee ID',
-                  hint: _isStudentRole ? 'e.g. F21-BSCS-045' : 'e.g. EMP-1042',
-                  controller: _identifierController,
-                  prefixIcon: Icons.badge_outlined,
-                  validator: (value) => Validators.validateRequired(
-                    value,
-                    fieldName: _isStudentRole ? 'Roll number' : 'Employee ID',
+                // Only Student (Roll Number) and Teacher (Employee ID)
+                // show an identifier field. HOD/Vice Principal/
+                // Principal/Admin show neither.
+                if (_requiresIdentifier) ...[
+                  const SizedBox(height: AppConstants.paddingMedium),
+                  CustomTextField(
+                    label: _isStudentRole ? 'Roll Number' : 'Employee ID',
+                    hint: _isStudentRole ? 'e.g. F21-BSCS-045' : 'e.g. EMP-1042',
+                    controller: _identifierController,
+                    prefixIcon: Icons.badge_outlined,
+                    validator: (value) => Validators.validateRequired(
+                      value,
+                      fieldName: _isStudentRole ? 'Roll number' : 'Employee ID',
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: AppConstants.paddingXLarge),
                 CustomButton(
                   label: 'Create Account',
@@ -220,9 +236,8 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   /// Department is fixed to the single supported department for this
-  /// project (IMCG F/6-2's BS Computer Science and Mathematics
-  /// Department), shown as a read-only field for transparency and to
-  /// keep the data model consistent for future multi-department support.
+  /// project, shown as a read-only field for transparency and to keep
+  /// the data model consistent for future multi-department support.
   Widget _buildDepartmentField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,15 +290,21 @@ class _SignupScreenState extends State<SignupScreen> {
               isExpanded: true,
               icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
               style: AppStyles.bodyLarge(),
+              dropdownColor: AppColors.surface,
               items: AppConstants.allRoles.map((role) {
                 return DropdownMenuItem<String>(
                   value: role,
-                  child: Text(_roleLabels[role] ?? role),
+                  child: Text(_roleLabels[role] ?? role, style: AppStyles.bodyLarge()),
                 );
               }).toList(),
               onChanged: (value) {
                 if (value == null) return;
-                setState(() => _selectedRole = value);
+                setState(() {
+                  _selectedRole = value;
+                  // Clear any previously entered identifier when
+                  // switching to/from a role that doesn't need one.
+                  _identifierController.clear();
+                });
               },
             ),
           ),

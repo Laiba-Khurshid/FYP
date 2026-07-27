@@ -3,9 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:project/models/user_model.dart';
-
 import 'package:project/core/utils/app_constants.dart';
-
 import 'package:project/services/notification_service.dart';
 
 /// A custom, UI-friendly exception thrown by [AuthService].
@@ -272,6 +270,15 @@ class AuthService {
   Stream<List<UserModel>> streamPendingUsers() {
     return _usersRef
         .where('verificationStatus', isEqualTo: AppConstants.verificationPending)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(UserModel.fromDocument).toList());
+  }
+
+  /// ✅ FIX: Added this method – streams approved users, newest first.
+  Stream<List<UserModel>> streamApprovedUsers() {
+    return _usersRef
+        .where('verificationStatus', isEqualTo: AppConstants.verificationApproved)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map(UserModel.fromDocument).toList());
