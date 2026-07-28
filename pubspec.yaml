@@ -10,7 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-
   # State management (MVVM ViewModels extend ChangeNotifier)
   provider: ^6.1.2
 
@@ -48,3 +47,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+dependency_overrides:
+    jni: 0.8.0
+
