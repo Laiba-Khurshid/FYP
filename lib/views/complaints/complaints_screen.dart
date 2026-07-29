@@ -2,29 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:project/models/complaint_model.dart';
-
 import 'package:project/routes/app_routes.dart';
-
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
-import 'package:project/core/utils/constants.dart';
-
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/viewmodels/complaint_viewmodel.dart';
-
 import 'package:project/widgets/asset_search_bar.dart';
 import 'package:project/widgets/complaint_card.dart';
 import 'package:project/widgets/custom_button.dart';
-/// The Complaints screen for AssetFlow.
-///
-/// What a user sees here depends entirely on their role — enforced by
-/// `ComplaintService.streamComplaints` on the server-query side:
-/// - Admin / HOD: every complaint ("Department Complaints").
-/// - Vice Principal: only escalated complaints.
-/// - Principal: only final-escalation complaints.
-/// - Teacher / Student: only their own complaint history, plus a
-///   floating action button to file a new one.
+
 class ComplaintsScreen extends StatefulWidget {
   const ComplaintsScreen({super.key});
 
@@ -64,16 +51,11 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
   }
 
   Future<void> _openFilterSheet(ComplaintViewModel viewModel) async {
-    final result = await showModalBottomSheet<_ComplaintFilterResult>(
+    final result = await showModalBottomSheet<ComplaintFilterResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ComplaintFilterSheet(
-        initialStatus: viewModel.statusFilter,
-        initialPriority: viewModel.priorityFilter,
-        initialLab: viewModel.labFilter,
-        initialCategory: viewModel.categoryFilter,
-      ),
+      builder: (_) => const ComplaintFilterSheet(),
     );
     if (result != null) {
       viewModel.applyFilters(
@@ -244,36 +226,23 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
   }
 }
 
-/// The result returned by [_ComplaintFilterSheet] when the user taps Apply.
-class _ComplaintFilterResult {
+class ComplaintFilterResult {
   final String? status;
   final String? priority;
   final String? lab;
   final String? category;
 
-  const _ComplaintFilterResult({this.status, this.priority, this.lab, this.category});
+  const ComplaintFilterResult({this.status, this.priority, this.lab, this.category});
 }
 
-/// A bottom-sheet dialog for filtering complaints by status, priority,
-/// lab, and category — mirrors AssetFilterDialog's look and feel.
-class _ComplaintFilterSheet extends StatefulWidget {
-  final String? initialStatus;
-  final String? initialPriority;
-  final String? initialLab;
-  final String? initialCategory;
-
-  const _ComplaintFilterSheet({
-    this.initialStatus,
-    this.initialPriority,
-    this.initialLab,
-    this.initialCategory,
-  });
+class ComplaintFilterSheet extends StatefulWidget {
+  const ComplaintFilterSheet({super.key});
 
   @override
-  State<_ComplaintFilterSheet> createState() => _ComplaintFilterSheetState();
+  State<ComplaintFilterSheet> createState() => _ComplaintFilterSheetState();
 }
 
-class _ComplaintFilterSheetState extends State<_ComplaintFilterSheet> {
+class _ComplaintFilterSheetState extends State<ComplaintFilterSheet> {
   String? _status;
   String? _priority;
   String? _lab;
@@ -285,15 +254,6 @@ class _ComplaintFilterSheetState extends State<_ComplaintFilterSheet> {
     AppConstants.statusResolved: 'Resolved',
     AppConstants.statusEscalated: 'Escalated',
   };
-
-  @override
-  void initState() {
-    super.initState();
-    _status = widget.initialStatus;
-    _priority = widget.initialPriority;
-    _lab = widget.initialLab;
-    _category = widget.initialCategory;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -349,7 +309,7 @@ class _ComplaintFilterSheetState extends State<_ComplaintFilterSheet> {
               _buildDropdown(
                 value: _lab,
                 hint: 'All Labs',
-                items: AssetConstants.labs,
+                items: ['Smart Lab 1', 'Smart Lab 2', 'Smart Lab 3', 'Computer Lab', 'Physics Lab', 'Chemistry Lab'],
                 labelBuilder: (v) => v,
                 onChanged: (value) => setState(() => _lab = value),
               ),
@@ -359,7 +319,7 @@ class _ComplaintFilterSheetState extends State<_ComplaintFilterSheet> {
               _buildDropdown(
                 value: _category,
                 hint: 'All Categories',
-                items: AssetConstants.allCategories,
+                items: ['Computer', 'Laptop', 'Projector', 'Monitor', 'Keyboard', 'Mouse', 'Printer', 'Scanner', 'Other'],
                 labelBuilder: (v) => v,
                 onChanged: (value) => setState(() => _category = value),
               ),
@@ -385,7 +345,7 @@ class _ComplaintFilterSheetState extends State<_ComplaintFilterSheet> {
                     child: CustomButton(
                       label: 'Apply',
                       onPressed: () => Navigator.of(context).pop(
-                        _ComplaintFilterResult(status: _status, priority: _priority, lab: _lab, category: _category),
+                        ComplaintFilterResult(status: _status, priority: _priority, lab: _lab, category: _category),
                       ),
                     ),
                   ),
@@ -420,7 +380,7 @@ class _ComplaintFilterSheetState extends State<_ComplaintFilterSheet> {
           icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
           style: AppStyles.bodyLarge(),
           items: [
-            DropdownMenuItem<String?>(value: null, child: Text(hint)),
+            const DropdownMenuItem<String?>(value: null, child: Text('All')),
             ...items.map((item) => DropdownMenuItem<String?>(value: item, child: Text(labelBuilder(item)))),
           ],
           onChanged: onChanged,

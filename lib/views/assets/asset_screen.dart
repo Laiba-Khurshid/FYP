@@ -3,26 +3,17 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:project/models/asset_model.dart';
-
 import 'package:project/routes/app_routes.dart';
-
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
-
+import 'package:project/core/utils/constants.dart';
 import 'package:project/viewmodels/asset_viewmodel.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
-
-import 'package:project/widgets/asset_card.dart';
 import 'package:project/widgets/asset_filter_dialog.dart';
 import 'package:project/widgets/asset_search_bar.dart';
 import 'package:project/widgets/custom_button.dart';
-/// The main Assets screen for AssetFlow: realtime searchable, filterable,
-/// sortable list of every asset in the department.
-///
-/// Admin and HOD see Add/Edit/Delete controls; Students see a
-/// view-only list (no add button, no edit/delete menu) per the
-/// department's access rules.
+
 class AssetsScreen extends StatefulWidget {
   const AssetsScreen({super.key});
 
@@ -31,7 +22,14 @@ class AssetsScreen extends StatefulWidget {
 }
 
 class _AssetsScreenState extends State<AssetsScreen> {
-  bool _isGridView = true;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AssetViewModel>().subscribe();
+    });
+  }
 
   bool _canManage(String? role) => role == AppConstants.roleAdmin || role == AppConstants.roleHOD;
 
@@ -126,15 +124,10 @@ class _AssetsScreenState extends State<AssetsScreen> {
     final canManage = _canManage(role);
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text('Assets', style: AppStyles.heading4()),
         actions: [
-          IconButton(
-            icon: Icon(_isGridView ? Icons.view_list_rounded : Icons.grid_view_rounded),
-            tooltip: _isGridView ? 'List view' : 'Grid view',
-            onPressed: () => setState(() => _isGridView = !_isGridView),
-          ),
           IconButton(
             icon: const Icon(Icons.sort_rounded),
             tooltip: 'Sort',
@@ -191,77 +184,236 @@ class _AssetsScreenState extends State<AssetsScreen> {
       return _buildEmptyState(viewModel, canManage);
     }
 
-    return _isGridView ? _buildGrid(assets, viewModel, canManage) : _buildList(assets, viewModel, canManage);
+    return _buildProfessionalList(assets, viewModel, canManage);
   }
 
-  Widget _buildGrid(List<AssetModel> assets, AssetViewModel viewModel, bool canManage) {
-    return GridView.builder(
+  Widget _buildProfessionalList(List<AssetModel> assets, AssetViewModel viewModel, bool canManage) {
+    // Group assets by category
+    final Map<String, List<AssetModel>> groupedAssets = {};
+    for (final asset in assets) {
+      final category = asset.category;
+      if (!groupedAssets.containsKey(category)) {
+        groupedAssets[category] = [];
+      }
+      groupedAssets[category]!.add(asset);
+    }
+
+    final sortedCategories = groupedAssets.keys.toList()..sort();
+
+    return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      itemCount: assets.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: AppConstants.paddingMedium,
-        mainAxisSpacing: AppConstants.paddingMedium,
-        childAspectRatio: 0.74,
+      itemCount: sortedCategories.length,
+      itemBuilder: (context, index) {
+        final category = sortedCategories[index];
+        final categoryAssets = groupedAssets[category]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Category Header
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: AppConstants.paddingMedium),
+              child: Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: AppConstants.paddingSmall),
+                  Text(
+                    category,
+                    style: AppStyles.heading4().copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${categoryAssets.length} items',
+                    style: AppStyles.caption(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            // Assets in this category
+            ...categoryAssets.map((asset) => TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: Duration(milliseconds: 200 + (categoryAssets.indexOf(asset) * 50)),
+              curve: Curves.easeOut,
+              builder: (context, value, child) => Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, (1 - value) * 10),
+                  child: child,
+                ),
+              ),
+              child: _buildListItem(asset, viewModel, canManage),
+            )),
+            const SizedBox(height: AppConstants.paddingMedium),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildListItem(AssetModel asset, AssetViewModel viewModel, bool canManage) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppConstants.paddingSmall),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
-      itemBuilder: (context, index) => TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: 1),
-        duration: Duration(milliseconds: 250 + (index % 6) * 40),
-        curve: Curves.easeOut,
-        builder: (context, value, child) => Opacity(
-          opacity: value,
-          child: Transform.translate(offset: Offset(0, (1 - value) * 12), child: child),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.paddingMedium,
+          vertical: AppConstants.paddingSmall,
         ),
-        child: _buildCard(assets[index], viewModel, canManage),
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+          ),
+          child: Icon(
+            _getCategoryIcon(asset.category),
+            color: AppColors.primary,
+            size: 22,
+          ),
+        ),
+        title: Text(
+          asset.assetName,
+          style: AppStyles.bodyLarge().copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            children: [
+              Icon(Icons.meeting_room_outlined, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                asset.labName,
+                style: AppStyles.caption(color: AppColors.textSecondary),
+              ),
+              const SizedBox(width: AppConstants.paddingMedium),
+              Icon(Icons.inventory_2_outlined, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                'Qty ${asset.quantity}',
+                style: AppStyles.caption(color: AppColors.textSecondary),
+              ),
+              if (_isTracked(asset.category)) ...[
+                const SizedBox(width: AppConstants.paddingMedium),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.qr_code_2_rounded, size: 12, color: AppColors.info),
+                      const SizedBox(width: 2),
+                      Text(
+                        'Tracked',
+                        style: AppStyles.caption(color: AppColors.info),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        trailing: canManage
+            ? PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
+          onSelected: (value) {
+            switch (value) {
+              case 'edit':
+                _openEditAsset(asset);
+                break;
+              case 'delete':
+                _confirmDelete(context, viewModel, asset);
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  const Icon(Icons.edit_outlined, size: 18, color: AppColors.textSecondary),
+                  const SizedBox(width: 8),
+                  Text('Edit', style: AppStyles.bodyMedium()),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                  const SizedBox(width: 8),
+                  Text('Delete', style: AppStyles.bodyMedium(color: AppColors.error)),
+                ],
+              ),
+            ),
+          ],
+        )
+            : null,
+        onTap: () => _openAssetDetails(asset),
       ),
     );
   }
 
-  Widget _buildList(List<AssetModel> assets, AssetViewModel viewModel, bool canManage) {
-    return ListView.separated(
-      physics: const AlwaysScrollableScrollPhysics(),
-      itemCount: assets.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppConstants.paddingMedium),
-      itemBuilder: (context, index) => TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: 1),
-        duration: Duration(milliseconds: 250 + (index % 6) * 40),
-        curve: Curves.easeOut,
-        builder: (context, value, child) => Opacity(
-          opacity: value,
-          child: Transform.translate(offset: Offset(0, (1 - value) * 12), child: child),
-        ),
-        child: _buildCard(assets[index], viewModel, canManage),
-      ),
-    );
+  bool _isTracked(String category) {
+    return AssetConstants.isTrackedCategory(category);
   }
 
-  Widget _buildCard(AssetModel asset, AssetViewModel viewModel, bool canManage) {
-    return AssetCard(
-      asset: asset,
-      showActions: canManage,
-      onTap: () => _openAssetDetails(asset),
-      onEdit: () => _openEditAsset(asset),
-      onDelete: () => _confirmDelete(context, viewModel, asset),
-    );
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'computer':
+        return Icons.computer_rounded;
+      case 'laptop':
+        return Icons.laptop_rounded;
+      case 'projector':
+        return Icons.airplay_rounded; // projector_rounded nahi hai, airplay_rounded use karein
+      case 'monitor':
+        return Icons.monitor_rounded;
+      case 'keyboard':
+        return Icons.keyboard_rounded;
+      case 'mouse':
+        return Icons.mouse_rounded;
+      case 'printer':
+        return Icons.print_rounded;
+      case 'scanner':
+        return Icons.scanner_rounded;
+      default:
+        return Icons.inventory_2_rounded;
+    }
   }
 
   Widget _buildShimmerLoading() {
     return Shimmer.fromColors(
       baseColor: AppColors.surface,
       highlightColor: AppColors.divider,
-      child: GridView.builder(
+      child: ListView.builder(
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: 6,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: AppConstants.paddingMedium,
-          mainAxisSpacing: AppConstants.paddingMedium,
-          childAspectRatio: 0.74,
-        ),
+        itemCount: 8,
         itemBuilder: (context, index) => Container(
+          margin: const EdgeInsets.only(bottom: AppConstants.paddingSmall),
+          height: 70,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
           ),
         ),
       ),

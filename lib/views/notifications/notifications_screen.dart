@@ -2,21 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:project/models/notification_model.dart';
-
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
-
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/viewmodels/notification_viewmodel.dart';
-
 import 'package:project/widgets/notification_tile.dart';
-/// The Notifications screen for AssetFlow.
-///
-/// Shared by every role: shows notifications addressed personally to
-/// the signed-in user, merged with any broadcast to their role (e.g.
-/// "New Complaint Filed" broadcasts to HOD). Tapping a notification
-/// marks it read; "Mark all read" clears the unread badge in one tap.
+
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
 
@@ -95,11 +87,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   void _handleTap(NotificationViewModel viewModel, NotificationModel notification) {
     viewModel.markAsRead(notification);
-    // Deep-linking to the exact complaint/maintenance details screen
-    // would require fetching that record by ID first (complaint vs.
-    // maintenance can't be told apart from `type` alone in every case),
-    // so for now this simply acknowledges the notification; the
-    // relevant list screens remain one tap away from the dashboard.
   }
 
   Widget _buildMessageState({required IconData icon, required String title, required String message}) {

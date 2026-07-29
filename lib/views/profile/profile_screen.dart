@@ -2,25 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:project/routes/app_routes.dart';
-
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
-
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/viewmodels/profile_viewmodel.dart';
-
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/profile_header.dart';
 
-/// The Profile screen for AssetFlow — available to every authenticated
-/// role.
-///
-/// Shows the full profile: picture, name, roll number (Students) or
-/// employee ID (Faculty/Admin/other staff), email, role, department,
-/// and phone number. Email, role, and department are always read-only;
-/// tapping "Edit Profile" opens [EditProfileScreen] for the editable
-/// fields.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 

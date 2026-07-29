@@ -115,6 +115,12 @@ class AssetViewModel extends ChangeNotifier {
     );
   }
 
+  /// Public wrapper around _subscribeToAssets() for external calls
+  /// (e.g., from AssetsScreen.initState).
+  void subscribe() {
+    _subscribeToAssets();
+  }
+
   /// Manually re-subscribes to the asset stream — used by
   /// pull-to-refresh. Firestore streams already push live updates, so
   /// this mainly exists to give the user visible refresh feedback and

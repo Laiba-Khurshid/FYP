@@ -6,15 +6,11 @@ import '../models/user_model.dart';
 import '../services/profile_service.dart';
 
 /// The ViewModel for the Profile Management module.
-///
-/// Owns all UI-facing state and delegates every Firestore/Storage
-/// operation to [ProfileService]. Screens interact with this class
-/// exclusively through [Provider] / [Consumer] — no Firebase calls are
-/// ever made directly from the UI.
 class ProfileViewModel extends ChangeNotifier {
   final ProfileService _profileService;
 
-  ProfileViewModel({ProfileService? profileService}) : _profileService = profileService ?? ProfileService();
+  ProfileViewModel({ProfileService? profileService})
+      : _profileService = profileService ?? ProfileService();
 
   bool _isLoading = false;
   bool _isSaving = false;
@@ -49,8 +45,7 @@ class ProfileViewModel extends ChangeNotifier {
   }
 
   /// Updates the current profile. Returns the updated [UserModel] on
-  /// success (also stored as [profile]); returns `null` on failure with
-  /// [errorMessage] populated.
+  /// success; returns `null` on failure with [errorMessage] populated.
   Future<UserModel?> updateProfile({
     required String fullName,
     String? phoneNumber,
@@ -67,6 +62,7 @@ class ProfileViewModel extends ChangeNotifier {
     _errorMessage = null;
     _isSaving = true;
     notifyListeners();
+
     try {
       final updated = await _profileService.updateProfile(
         existing: current,
@@ -76,16 +72,19 @@ class ProfileViewModel extends ChangeNotifier {
         removeProfileImage: removeProfileImage,
       );
       _profile = updated;
+      _isSaving = false;
+      notifyListeners();
       return updated;
     } on ProfileException catch (e) {
       _errorMessage = e.message;
+      _isSaving = false;
+      notifyListeners();
       return null;
     } catch (_) {
       _errorMessage = 'Could not update your profile. Please try again.';
-      return null;
-    } finally {
       _isSaving = false;
       notifyListeners();
+      return null;
     }
   }
 }

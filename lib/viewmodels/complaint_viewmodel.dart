@@ -8,13 +8,6 @@ import 'package:flutter/material.dart';
 import '../models/complaint_model.dart';
 import '../services/complaint_service.dart';
 
-/// The ViewModel for the entire Complaint Management module (role-based
-/// list, search, filter, submit, status update, and escalation).
-///
-/// Owns all UI-facing state and delegates every Firestore/Storage
-/// operation to [ComplaintService]. Screens interact with this class
-/// exclusively through [Provider] / [Consumer] — no Firebase calls are
-/// ever made directly from the UI.
 class ComplaintViewModel extends ChangeNotifier {
   final ComplaintService _complaintService;
 
@@ -52,10 +45,6 @@ class ComplaintViewModel extends ChangeNotifier {
   bool get hasActiveFilters =>
       _statusFilter != null || _priorityFilter != null || _labFilter != null || _categoryFilter != null;
 
-  /// The list of complaints after search and filters have been applied
-  /// — what the Complaints screen should actually render. Role-based
-  /// visibility is already enforced upstream by the Firestore query in
-  /// [ComplaintService.streamComplaints].
   List<ComplaintModel> get complaints {
     return _allComplaints.where((complaint) {
       final query = _searchQuery.toLowerCase();
@@ -78,9 +67,6 @@ class ComplaintViewModel extends ChangeNotifier {
   // Stream subscription (role-aware)
   // -----------------------------------------------------------------
 
-  /// Subscribes to the complaints visible to the current user. Safe to
-  /// call on every build — it only re-subscribes when [role] or [uid]
-  /// actually changes (e.g. after login), avoiding redundant listeners.
   void subscribe({required String role, required String uid}) {
     if (_subscribedRole == role && _subscribedUid == uid && _complaintsSubscription != null) {
       return;
@@ -101,9 +87,6 @@ class ComplaintViewModel extends ChangeNotifier {
         if (error is ComplaintException) {
           _errorMessage = error.message;
         } else if (error is FirebaseException) {
-          // Surface the real Firestore error (e.g. a missing composite
-          // index or a permissions rule) instead of a generic message
-          // that would otherwise hide the actual cause.
           _errorMessage = error.message ?? 'Firestore error (${error.code}). Please try again.';
         } else {
           _errorMessage = 'Could not load complaints. Please check your internet connection.';
@@ -113,12 +96,11 @@ class ComplaintViewModel extends ChangeNotifier {
     );
   }
 
-  /// Manually re-subscribes — used by pull-to-refresh.
   Future<void> refreshComplaints() async {
     final role = _subscribedRole;
     final uid = _subscribedUid;
     if (role != null && uid != null) {
-      _subscribedRole = null; // force re-subscribe below
+      _subscribedRole = null;
       subscribe(role: role, uid: uid);
     }
     await Future.delayed(const Duration(milliseconds: 400));
@@ -169,8 +151,6 @@ class ComplaintViewModel extends ChangeNotifier {
   // Create
   // -----------------------------------------------------------------
 
-  /// Files a new complaint. Returns `true` on success; on failure,
-  /// [errorMessage] is populated and `false` is returned.
   Future<bool> addComplaint({
     required String assetId,
     String? assetCode,
@@ -183,16 +163,11 @@ class ComplaintViewModel extends ChangeNotifier {
     required String description,
     required String priority,
     File? imageFile,
+    Uint8List? imageBytes,
   }) async {
     _errorMessage = null;
     _setSubmitting(true);
     try {
-      // Convert File to Uint8List for the service
-      Uint8List? imageBytes;
-      if (imageFile != null) {
-        imageBytes = await imageFile.readAsBytes();
-      }
-
       await _complaintService.addComplaint(
         assetId: assetId,
         assetCode: assetCode,
@@ -204,6 +179,7 @@ class ComplaintViewModel extends ChangeNotifier {
         userRole: userRole,
         description: description,
         priority: priority,
+        imageFile: imageFile,
         imageBytes: imageBytes,
       );
       return true;
@@ -222,7 +198,6 @@ class ComplaintViewModel extends ChangeNotifier {
   // Update
   // -----------------------------------------------------------------
 
-  /// Updates a complaint's status (HOD/Admin only, enforced by the UI).
   Future<bool> updateStatus(
       ComplaintModel complaint,
       String status, {
@@ -252,8 +227,6 @@ class ComplaintViewModel extends ChangeNotifier {
     }
   }
 
-  /// Escalates a complaint one level up the chain (HOD/Admin only,
-  /// enforced by the UI).
   Future<bool> escalateComplaint(
       ComplaintModel complaint, {
         required String actorId,

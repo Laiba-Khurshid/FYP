@@ -8,19 +8,11 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 import 'package:project/core/utils/validators.dart';
-
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/viewmodels/profile_viewmodel.dart';
-
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
-/// The Edit Profile screen for AssetFlow.
-///
-/// Lets the signed-in user update their full name, phone number, and
-/// profile picture. Email, role, and department are shown as
-/// disabled/read-only fields for context but can never be submitted —
-/// [ProfileService.updateProfile] doesn't even accept them as
-/// parameters, so this is enforced at every layer, not just the UI.
+
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -84,7 +76,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
 
     if (source == null) return;
-    final picked = await ImagePicker().pickImage(source: source, imageQuality: 80, maxWidth: 1000);
+
+    // Reduced quality and size for faster upload
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 50,    // 80 se 50 kiya (faster upload)
+      maxWidth: 600,       // 1000 se 600 kiya (faster upload)
+    );
+
     if (picked != null) {
       final bytes = await picked.readAsBytes();
       setState(() {
@@ -108,6 +107,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!mounted) return;
 
     if (updated != null) {
+      // Success - pop immediately
       Navigator.of(context).pop();
       _showSnack('Profile updated successfully.');
     } else {

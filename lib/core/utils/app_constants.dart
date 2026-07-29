@@ -10,7 +10,7 @@ class AppConstants {
   // ---------------------------------------------------------------------
   // App metadata
   // ---------------------------------------------------------------------
-  static const String appName = 'AssetFlow';
+  static const String appName = 'CS AssetFlow';
   static const String appTagline = 'Smart Department Asset Management System';
   static const String organizationName =
       'IMCG F/6-2 Islamabad Model College for Girls';

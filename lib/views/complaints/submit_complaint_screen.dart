@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:project/models/asset_model.dart';
 
@@ -20,15 +21,6 @@ import 'package:project/viewmodels/complaint_viewmodel.dart';
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
 
-/// The Add Complaint screen for AssetFlow (Student/Teacher).
-///
-/// Walks the reporter through an intelligent, dependent selection flow:
-/// pick a Lab → the asset list for that lab loads live from Firestore →
-/// pick an Asset → if the asset is individually tracked, pick one of its
-/// live Asset Codes; if it's a bulk asset, enter the affected quantity →
-/// describe the issue → optionally attach a photo → pick a priority →
-/// submit. All Firestore/Storage work is delegated to
-/// [ComplaintViewModel.addComplaint].
 class AddComplaintScreen extends StatefulWidget {
   const AddComplaintScreen({super.key});
 
@@ -45,7 +37,10 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
   AssetModel? _selectedAsset;
   String? _selectedAssetCode;
   String _priority = AppConstants.priorityMedium;
-  File? _pickedImageFile;  // Changed: Uint8List? se File?
+
+  // Web aur Mobile dono ke liye
+  File? _pickedImageFile;      // Mobile ke liye
+  Uint8List? _pickedImageBytes; // Web ke liye
 
   @override
   void dispose() {
@@ -79,11 +74,28 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
     if (source == null) return;
 
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source, imageQuality: 80, maxWidth: 1600);
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 70,
+      maxWidth: 800,
+    );
+
     if (picked == null) return;
 
-    final file = File(picked.path);  // Changed: bytes read karna band
-    setState(() => _pickedImageFile = file);  // Changed: _pickedImageBytes se _pickedImageFile
+    if (kIsWeb) {
+      // Web par - bytes store karein
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _pickedImageBytes = bytes;
+        _pickedImageFile = null;
+      });
+    } else {
+      // Mobile par - File store karein
+      setState(() {
+        _pickedImageFile = File(picked.path);
+        _pickedImageBytes = null;
+      });
+    }
   }
 
   Future<ImageSource?> _chooseImageSource() {
@@ -140,9 +152,6 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
       return;
     }
 
-    // The complaints collection has a fixed 16-field schema with no
-    // dedicated "affected quantity" field, so for bulk assets that
-    // figure is recorded as a clear prefix on the description instead.
     final description = _assetIsTracked
         ? _descriptionController.text.trim()
         : 'Affected Quantity: ${_affectedQuantityController.text.trim()}\n\n${_descriptionController.text.trim()}';
@@ -158,7 +167,8 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
       userRole: user.role,
       description: description,
       priority: _priority,
-      imageFile: _pickedImageFile,  // Changed: imageBytes se imageFile
+      imageFile: _pickedImageFile,      // Mobile
+      imageBytes: _pickedImageBytes,    // Web
     );
 
     if (!mounted) return;
@@ -385,7 +395,9 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
   }
 
   Widget _buildImagePicker() {
-    if (_pickedImageFile == null) {  // Changed: _pickedImageBytes se _pickedImageFile
+    final hasImage = _pickedImageFile != null || _pickedImageBytes != null;
+
+    if (!hasImage) {
       return InkWell(
         onTap: _pickImage,
         borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
@@ -407,22 +419,36 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
         ),
       );
     }
+
+    // Web par Image.memory, Mobile par Image.file
+    final imageWidget = kIsWeb
+        ? Image.memory(
+      _pickedImageBytes!,
+      height: 160,
+      width: double.infinity,
+      fit: BoxFit.cover,
+    )
+        : Image.file(
+      _pickedImageFile!,
+      height: 160,
+      width: double.infinity,
+      fit: BoxFit.cover,
+    );
+
     return Stack(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-          child: Image.file(  // Changed: Image.memory se Image.file
-            _pickedImageFile!,
-            height: 160,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
+          child: imageWidget,
         ),
         Positioned(
           top: 8,
           right: 8,
           child: GestureDetector(
-            onTap: () => setState(() => _pickedImageFile = null),  // Changed: _pickedImageBytes se _pickedImageFile
+            onTap: () => setState(() {
+              _pickedImageFile = null;
+              _pickedImageBytes = null;
+            }),
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),

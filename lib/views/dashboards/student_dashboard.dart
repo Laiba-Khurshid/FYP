@@ -11,13 +11,7 @@ import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
 import 'package:project/widgets/dashboard_card.dart';
 import 'package:project/widgets/quick_action_card.dart';
-/// The Student Dashboard for AssetFlow.
-///
-/// Gives Students quick access to viewing lab assets, submitting a
-/// complaint, checking their complaint history, notifications, and
-/// their profile. This phase only prepares the dashboard shell — real
-/// data will be wired in once the Assets and Complaints modules are
-/// implemented.
+
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
 
@@ -77,7 +71,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
       Navigator.of(context).pushNamed(AppRoutes.complaintsScreen);
       return;
     }
-    _showComingSoon(_bottomNavItems[index].label);
+    if (index == 3) {
+      Navigator.of(context).pushNamed(AppRoutes.profileScreen);
+      return;
+    }
   }
 
   void _closeDrawerThen(String feature) {
@@ -122,8 +119,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
             Navigator.of(context).pop();
             Navigator.of(context).pushNamed(AppRoutes.complaintsScreen);
           }),
-          DrawerMenuItem(icon: Icons.notifications_none_rounded, label: 'Notifications', onTap: () => _closeDrawerThen('Notifications')),
-          DrawerMenuItem(icon: Icons.person_outline_rounded, label: 'Profile', onTap: () => _closeDrawerThen('Profile')),
+          DrawerMenuItem(icon: Icons.notifications_none_rounded, label: 'Notifications', onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pushNamed(AppRoutes.notificationsScreen);
+          }),
+          DrawerMenuItem(icon: Icons.person_outline_rounded, label: 'Profile', onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pushNamed(AppRoutes.profileScreen);
+          }),
         ],
       ),
       body: RefreshIndicator(
@@ -147,7 +150,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               title: 'Notifications',
               subtitle: 'Stay updated on your complaint status',
               iconColor: AppColors.accent,
-              onTap: () => _showComingSoon('Notifications'),
+              onTap: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
             ),
             const SizedBox(height: AppConstants.paddingMedium),
             DashboardCard(
@@ -155,7 +158,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               title: 'Profile',
               subtitle: 'View and edit your account details',
               iconColor: AppColors.info,
-              onTap: () => _showComingSoon('Profile'),
+              onTap: () => Navigator.of(context).pushNamed(AppRoutes.profileScreen),
             ),
             const SizedBox(height: AppConstants.paddingMedium),
             DashboardCard(
@@ -225,15 +228,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
           title: 'Notifications',
           subtitle: 'Recent updates',
           color: AppColors.accent,
-          onTap: () => _showComingSoon('Notifications'),
+          onTap: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
         ),
       ],
     );
   }
 }
 
-/// Welcome section shown at the top of the Student dashboard: avatar,
-/// name, today's date, and department.
 class _StudentWelcomeHeader extends StatelessWidget {
   final dynamic user;
 

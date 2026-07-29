@@ -6,13 +6,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
-/// Premium animated splash screen shown when AssetFlow launches.
-///
-/// Displays the app identity (name, tagline, organization) with a
-/// combined fade + scale animation for at least [AppConstants.splashDuration],
-/// while [AuthViewModel.tryAutoLogin] checks for a remembered session in
-/// the background. Navigates to a role-based dashboard if a session was
-/// restored, or to the login screen otherwise.
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -24,7 +18,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
   late final Animation<double> _scaleAnimation;
-  late final Animation<double> _logoRotation;
+  late final Animation<double> _logoScaleAnimation;
+  late final Animation<double> _rotationAnimation;
+  late final Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -32,25 +28,42 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller = AnimationController(
       vsync: this,
-      duration: AppConstants.fadeAnimationDuration,
+      duration: const Duration(milliseconds: 2000),
     );
 
     _fadeAnimation = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.0, 0.7, curve: Curves.easeIn),
+      curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.8, curve: Curves.elasticOut),
+        curve: const Interval(0.0, 0.7, curve: Curves.easeOutBack),
       ),
     );
 
-    _logoRotation = Tween<double>(begin: -0.15, end: 0.0).animate(
+    _logoScaleAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.8, curve: Curves.easeOutBack),
+        curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
+      ),
+    );
+
+    _rotationAnimation = Tween<double>(begin: -0.2, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
+      ),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.3, 0.8, curve: Curves.easeOut),
       ),
     );
 
@@ -58,14 +71,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _resolveInitialRoute();
   }
 
-  /// Waits for both the minimum splash duration and the auto-login
-  /// check to complete (whichever takes longer), then routes to the
-  /// appropriate screen.
   Future<void> _resolveInitialRoute() async {
     final authViewModel = context.read<AuthViewModel>();
 
+    // Splash time increased: 3000ms se 4500ms (4.5 seconds)
     await Future.wait<void>([
-      Future.delayed(AppConstants.splashDuration),
+      Future.delayed(const Duration(milliseconds: 5000)),
       authViewModel.tryAutoLogin(),
     ]);
 
@@ -92,7 +103,17 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(gradient: AppColors.splashGradient),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF1A237E), // Dark Blue
+              Color(0xFF1565C0), // Medium Blue
+              Color(0xFF42A5F5), // Light Blue
+            ],
+          ),
+        ),
         child: SafeArea(
           child: AnimatedBuilder(
             animation: _controller,
@@ -108,38 +129,86 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Spacer(flex: 3),
+                const Spacer(flex: 2),
                 _buildLogo(),
                 const SizedBox(height: AppConstants.paddingLarge),
-                Text(
-                  AppConstants.appName,
-                  style: AppStyles.splashTitle(),
-                ),
-                const SizedBox(height: AppConstants.paddingSmall),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingXLarge),
+                // CS AssetFlow - 1 LINE MEIN
+                SlideTransition(
+                  position: _slideAnimation,
                   child: Text(
-                    AppConstants.appTagline,
-                    textAlign: TextAlign.center,
-                    style: AppStyles.splashSubtitle(),
+                    'CS AssetFlow',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 2,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 10,
+                          color: Colors.black.withValues(alpha: 0.3),
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppConstants.paddingMedium),
+                // Tagline
+                SlideTransition(
+                  position: _slideAnimation,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingXLarge),
+                    child: Text(
+                      'SMART DEPARTMENT ASSET\nMANAGEMENT SYSTEM',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withValues(alpha: 0.85),
+                        letterSpacing: 2,
+                        height: 1.4,
+                      ),
+                    ),
                   ),
                 ),
                 const Spacer(flex: 3),
-                const SizedBox(
-                  height: 30,
-                  width: 30,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.6,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.textOnPrimary),
+                // Loading indicator
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: const SizedBox(
+                    height: 30,
+                    width: 30,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.6,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppConstants.paddingXLarge),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
-                  child: Text(
-                    AppConstants.organizationName,
-                    textAlign: TextAlign.center,
-                    style: AppStyles.splashFooter(),
+                // Footer
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLarge),
+                    child: Text(
+                      'CS AssetFlow v1.0',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withValues(alpha: 0.6),
+                        letterSpacing: 1,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppConstants.paddingLarge),
@@ -151,47 +220,80 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
   }
 
-  /// Professional logo placeholder built purely from shapes/icons.
-  ///
-  /// Will be replaced with the department's official branded logo asset
-  /// once supplied; kept as a vector-based placeholder so the splash
-  /// screen renders correctly without depending on external image files.
+  /// CS AssetFlow Logo with your custom logo image
   Widget _buildLogo() {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        return Transform.rotate(
-          angle: _logoRotation.value,
-          child: child,
+        return Transform.scale(
+          scale: _logoScaleAnimation.value,
+          child: Transform.rotate(
+            angle: _rotationAnimation.value,
+            child: child,
+          ),
         );
       },
       child: Container(
-        height: 110,
-        width: 110,
+        height: 140,
+        width: 140,
         decoration: BoxDecoration(
-          color: AppColors.textOnPrimary.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.textOnPrimary.withOpacity(0.4), width: 1.5),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.3),
+            width: 2,
+          ),
         ),
         child: Center(
-          child: Container(
-            height: 78,
-            width: 78,
-            decoration: BoxDecoration(
-              color: AppColors.textOnPrimary,
-              borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.textOnPrimary.withOpacity(0.4),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.inventory_2_rounded,
-              size: 40,
-              color: AppColors.primary,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.asset(
+              'lib/images/logo.png',
+              height: 90,
+              width: 90,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback agar image load na ho
+                return Container(
+                  height: 90,
+                  width: 90,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'CS',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1A237E),
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Text(
+                        'AssetFlow',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A237E),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Container(
+                        height: 2,
+                        width: 30,
+                        decoration: BoxDecoration(
+                          color: Color(0xFF1A237E),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),

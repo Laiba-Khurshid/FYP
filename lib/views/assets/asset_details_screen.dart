@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -14,12 +13,7 @@ import 'package:project/viewmodels/asset_viewmodel.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
 
 import 'package:project/views/assets/edit_asset_screen.dart';
-/// The Asset Details screen for AssetFlow.
-///
-/// Shows the asset's full information (large image, name, category,
-/// lab, quantity, purchase date, location) and, for individually
-/// tracked categories, a live-updating scrollable list of every
-/// generated Asset Code from the asset's `asset_items` subcollection.
+
 class AssetDetailsScreen extends StatelessWidget {
   final AssetModel asset;
 
@@ -115,12 +109,18 @@ class AssetDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildImage(),
-            const SizedBox(height: AppConstants.paddingLarge),
-            Text(asset.assetName, style: AppStyles.heading2()),
+            // Asset Name
+            Text(
+              asset.assetName,
+              style: AppStyles.heading2(),
+            ),
             const SizedBox(height: 4),
-            Text(asset.assetId, style: AppStyles.label(color: AppColors.primary)),
+            Text(
+              asset.assetId,
+              style: AppStyles.label(color: AppColors.primary),
+            ),
             const SizedBox(height: AppConstants.paddingLarge),
+            // Asset Details Card
             _buildInfoCard(),
             if (isTracked) ...[
               const SizedBox(height: AppConstants.paddingLarge),
@@ -136,35 +136,6 @@ class AssetDetailsScreen extends StatelessWidget {
             const SizedBox(height: AppConstants.paddingLarge),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildImage() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppConstants.borderRadiusXLarge),
-      child: AspectRatio(
-        aspectRatio: 16 / 10,
-        child: (asset.imageUrl != null && asset.imageUrl!.isNotEmpty)
-            ? CachedNetworkImage(
-          imageUrl: asset.imageUrl!,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: AppColors.surface,
-            child: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-          ),
-          errorWidget: (context, url, error) => _buildImagePlaceholder(),
-        )
-            : _buildImagePlaceholder(),
-      ),
-    );
-  }
-
-  Widget _buildImagePlaceholder() {
-    return Container(
-      color: AppColors.surface,
-      child: const Center(
-        child: Icon(Icons.inventory_2_rounded, size: 56, color: AppColors.textHint),
       ),
     );
   }
@@ -186,7 +157,11 @@ class AssetDetailsScreen extends StatelessWidget {
           const Divider(height: AppConstants.paddingLarge),
           _buildInfoRow(Icons.numbers_rounded, 'Quantity', asset.quantity.toString()),
           const Divider(height: AppConstants.paddingLarge),
-          _buildInfoRow(Icons.event_outlined, 'Purchase Date', DateFormat('MMMM d, y').format(asset.purchaseDate)),
+          _buildInfoRow(
+            Icons.event_outlined,
+            'Purchase Date',
+            DateFormat('MMMM d, y').format(asset.purchaseDate),
+          ),
           const Divider(height: AppConstants.paddingLarge),
           _buildInfoRow(Icons.place_outlined, 'Location', asset.location),
         ],
@@ -257,14 +232,20 @@ class AssetDetailsScreen extends StatelessWidget {
               return ListTile(
                 dense: true,
                 leading: const Icon(Icons.qr_code_2_rounded, color: AppColors.primary, size: 20),
-                title: Text(item.assetCode, style: AppStyles.bodyMedium().copyWith(fontWeight: FontWeight.w600)),
+                title: Text(
+                  item.assetCode,
+                  style: AppStyles.bodyMedium().copyWith(fontWeight: FontWeight.w600),
+                ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _statusColor(item.status).withOpacity(0.1),
+                    color: _statusColor(item.status).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
                   ),
-                  child: Text(item.status, style: AppStyles.caption(color: _statusColor(item.status))),
+                  child: Text(
+                    item.status,
+                    style: AppStyles.caption(color: _statusColor(item.status)),
+                  ),
                 ),
               );
             },
