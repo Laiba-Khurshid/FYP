@@ -9,12 +9,7 @@ import 'package:project/core/utils/validators.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
-/// The Login screen for AssetFlow.
-///
-/// Collects email/password, offers a "Remember Me" toggle and a
-/// "Forgot Password?" link, and delegates authentication entirely to
-/// [AuthViewModel]. On success, routes to the role-appropriate
-/// dashboard using [AppRoutes.dashboardForRole].
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -90,7 +85,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Form(
                     key: _formKey,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const SizedBox(height: AppConstants.paddingXLarge),
                         _buildHeader(),
@@ -119,13 +115,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         _buildRememberAndForgot(authViewModel),
                         const SizedBox(height: AppConstants.paddingLarge),
                         CustomButton(
-                          label: 'Login',
+                          label: 'Sign in',
                           isLoading: authViewModel.isLoading,
                           onPressed: () => _handleLogin(authViewModel),
                         ),
-                        const Spacer(),
-                        _buildSignupPrompt(),
                         const SizedBox(height: AppConstants.paddingLarge),
+                        _buildSignupPrompt(),
+                        const SizedBox(height: AppConstants.paddingXLarge),
                       ],
                     ),
                   ),
@@ -140,23 +136,73 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildHeader() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // Logo - CS AssetFlow
         Container(
-          height: 64,
-          width: 64,
+          height: 80,
+          width: 80,
           decoration: BoxDecoration(
             gradient: AppColors.primaryGradient,
             borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.3),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
           ),
-          child: const Icon(Icons.inventory_2_rounded, color: AppColors.textOnPrimary, size: 32),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+            child: Image.asset(
+              'lib/images/logo.png',
+              height: 80,
+              width: 80,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback logo agar image load na ho
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'CS',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textOnPrimary,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Text(
+                        'AssetFlow',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textOnPrimary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
         ),
         const SizedBox(height: AppConstants.paddingLarge),
-        Text('Welcome Back', style: AppStyles.heading1()),
+        Text(
+          'Welcome Back',
+          style: AppStyles.heading1(),
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: AppConstants.paddingXSmall),
         Text(
-          'Log in to continue managing ${AppConstants.departmentName} assets.',
+          'Sign in to continue using CS AssetFlow.',
           style: AppStyles.bodyMedium(color: AppColors.textSecondary),
+          textAlign: TextAlign.center,
         ),
       ],
     );

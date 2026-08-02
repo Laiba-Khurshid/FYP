@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,17 +9,14 @@ import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:project/models/asset_model.dart';
-
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 import 'package:project/core/utils/constants.dart';
 import 'package:project/core/utils/validators.dart';
-
 import 'package:project/viewmodels/asset_viewmodel.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/viewmodels/complaint_viewmodel.dart';
-
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
 
@@ -38,9 +37,8 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
   String? _selectedAssetCode;
   String _priority = AppConstants.priorityMedium;
 
-  // Web aur Mobile dono ke liye
-  File? _pickedImageFile;      // Mobile ke liye
-  Uint8List? _pickedImageBytes; // Web ke liye
+  File? _pickedImageFile;
+  Uint8List? _pickedImageBytes;
 
   @override
   void dispose() {
@@ -69,6 +67,23 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
     });
   }
 
+  void _showSnack(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message, style: AppStyles.bodyMedium(color: AppColors.textOnPrimary)),
+          backgroundColor: isError ? AppColors.error : AppColors.success,
+          duration: AppConstants.snackBarDuration,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall)),
+        ),
+      );
+  }
+
+  // ================================================================
+  // IMAGE PICKER WITH VALIDATION
+  // ================================================================
   Future<void> _pickImage() async {
     final source = await _chooseImageSource();
     if (source == null) return;
@@ -82,19 +97,72 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
 
     if (picked == null) return;
 
-    if (kIsWeb) {
-      // Web par - bytes store karein
+    try {
+      // Read bytes
       final bytes = await picked.readAsBytes();
-      setState(() {
-        _pickedImageBytes = bytes;
-        _pickedImageFile = null;
+
+      // Check file size (max 5MB)
+      final fileSizeInMB = bytes.length / (1024 * 1024);
+      if (fileSizeInMB > 5) {
+        _showSnack('Image is too large (max 5MB). Please select a smaller image.', isError: true);
+        return;
+      }
+
+      // Get image dimensions using Completer
+      final imageInfo = await _getImageDimensions(bytes);
+
+      if (imageInfo == null) {
+        _showSnack('Could not read image. Please try another photo.', isError: true);
+        return;
+      }
+
+      // Check aspect ratio (should be landscape for asset photos)
+      final aspectRatio = imageInfo.width / imageInfo.height;
+      if (aspectRatio < 0.8 || aspectRatio > 2.0) {
+        _showSnack(
+          'Please upload a landscape photo of the asset. Selfies and screenshots are not allowed.',
+          isError: true,
+        );
+        return;
+      }
+
+      // Check minimum resolution
+      if (imageInfo.width < 300 || imageInfo.height < 200) {
+        _showSnack('Image is too small. Please upload a clearer photo (min 300x200).', isError: true);
+        return;
+      }
+
+      // VALIDATION PASSED - Store image
+      if (kIsWeb) {
+        setState(() {
+          _pickedImageBytes = bytes;
+          _pickedImageFile = null;
+        });
+      } else {
+        setState(() {
+          _pickedImageFile = File(picked.path);
+          _pickedImageBytes = null;
+        });
+      }
+
+      _showSnack('Asset photo uploaded successfully!', isError: false);
+
+    } catch (e) {
+      _showSnack('Error processing image. Please try again.', isError: true);
+    }
+  }
+
+  // Helper method to get image dimensions
+  Future<_ImageInfo?> _getImageDimensions(Uint8List bytes) async {
+    try {
+      final completer = Completer<ui.Image>();
+      ui.decodeImageFromList(bytes, (image) {
+        completer.complete(image);
       });
-    } else {
-      // Mobile par - File store karein
-      setState(() {
-        _pickedImageFile = File(picked.path);
-        _pickedImageBytes = null;
-      });
+      final image = await completer.future;
+      return _ImageInfo(image.width, image.height);
+    } catch (e) {
+      return null;
     }
   }
 
@@ -167,8 +235,8 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
       userRole: user.role,
       description: description,
       priority: _priority,
-      imageFile: _pickedImageFile,      // Mobile
-      imageBytes: _pickedImageBytes,    // Web
+      imageFile: _pickedImageFile,
+      imageBytes: _pickedImageBytes,
     );
 
     if (!mounted) return;
@@ -179,20 +247,6 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
     } else {
       _showSnack(complaintViewModel.errorMessage ?? 'Could not submit the complaint. Please try again.', isError: true);
     }
-  }
-
-  void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message, style: AppStyles.bodyMedium(color: AppColors.textOnPrimary)),
-          backgroundColor: isError ? AppColors.error : AppColors.success,
-          duration: AppConstants.snackBarDuration,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall)),
-        ),
-      );
   }
 
   @override
@@ -414,32 +468,24 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
               const Icon(Icons.add_a_photo_outlined, color: AppColors.primary, size: 32),
               const SizedBox(height: AppConstants.paddingSmall),
               Text('Upload Photo', style: AppStyles.bodyMedium(color: AppColors.primary)),
+              const SizedBox(height: 4),
+              Text(
+                'Landscape photos only (no selfies/screenshots)',
+                style: AppStyles.caption(color: AppColors.textHint),
+              ),
             ],
           ),
         ),
       );
     }
 
-    // Web par Image.memory, Mobile par Image.file
-    final imageWidget = kIsWeb
-        ? Image.memory(
-      _pickedImageBytes!,
-      height: 160,
-      width: double.infinity,
-      fit: BoxFit.cover,
-    )
-        : Image.file(
-      _pickedImageFile!,
-      height: 160,
-      width: double.infinity,
-      fit: BoxFit.cover,
-    );
-
     return Stack(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-          child: imageWidget,
+          child: kIsWeb
+              ? Image.memory(_pickedImageBytes!, height: 160, width: double.infinity, fit: BoxFit.cover)
+              : Image.file(_pickedImageFile!, height: 160, width: double.infinity, fit: BoxFit.cover),
         ),
         Positioned(
           top: 8,
@@ -453,6 +499,29 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
               padding: const EdgeInsets.all(4),
               decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
               child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 8,
+          left: 8,
+          right: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 14),
+                SizedBox(width: 4),
+                Text(
+                  'Asset Photo ✓',
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ],
             ),
           ),
         ),
@@ -489,4 +558,12 @@ class _AddComplaintScreenState extends State<AddComplaintScreen> {
       }).toList(),
     );
   }
+}
+
+// Helper class for image info
+class _ImageInfo {
+  final int width;
+  final int height;
+
+  _ImageInfo(this.width, this.height);
 }

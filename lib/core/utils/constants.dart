@@ -1,19 +1,10 @@
 /// Asset Management Module constants for AssetFlow.
-///
-/// Kept in a dedicated file (separate from [AppConstants] in
-/// `app_constants.dart`) specifically for the department's real lab
-/// names, asset category taxonomy, and the automatic Asset Code
-/// generation rules, as requested for the Asset Management module.
 class AssetConstants {
   AssetConstants._();
 
   // ---------------------------------------------------------------------
   // Laboratories
   // ---------------------------------------------------------------------
-  // This application is built exclusively for the BS Computer Science
-  // Department, so there is intentionally no department dropdown or
-  // department field anywhere in the Asset Management module — every
-  // asset implicitly belongs to this single department.
   static const List<String> labs = [
     'Project Lab',
     'Smart Lab 1',
@@ -28,15 +19,13 @@ class AssetConstants {
   // ---------------------------------------------------------------------
   // Asset categories, grouped for a readable dropdown UI.
   // ---------------------------------------------------------------------
-  // Firestore only ever stores the leaf category string (e.g.
-  // "Chromebook"), never the group name — the grouping below exists
-  // purely to organize the category picker.
   static const Map<String, List<String>> categoryGroups = {
     'Computers & Devices': [
       'Computer System',
       'Chromebook',
       'VDI Computer',
       'HP Computer',
+      'Lenovo Computer System',
     ],
     'Input Devices': [
       'Keyboard',
@@ -53,16 +42,19 @@ class AssetConstants {
       'Display Screen',
       'Teleconference Screen',
       'LED Screen',
+      'Projection Screen',
     ],
     'Networking Equipment': [
       'Router',
       'Hub',
       'ONT',
       'HDMI',
+      'Accessory',
+      'Internet',
     ],
     'Audio & Video': [
       'Sound System',
-      'Speaker',
+      'Sound Speaker',
       'CCTV Camera',
       'EPTZ Camera',
       'Intercom',
@@ -79,50 +71,72 @@ class AssetConstants {
       'Cupboard',
       'Rostrum',
       'Notice Board',
+      'Board',
+      'Acrylic Board',
     ],
     'Electrical Equipment': [
       'AC',
       'Fan',
       'Exhaust Fan',
       'Lights',
+      'Light',
       'UPS',
     ],
   };
 
-  /// Flat list of every category leaf value, in group order — used
-  /// wherever a plain list (rather than a grouped dropdown) is needed,
-  /// e.g. the filter dialog.
+  /// Flat list of every category leaf value, in group order.
   static List<String> get allCategories =>
       categoryGroups.values.expand((categories) => categories).toList();
 
   // ---------------------------------------------------------------------
-  // Asset Code generation
+  // Asset Code generation (Tracked Categories)
+  // SAB TRACKED CATEGORIES (HAR UNIT KA UNIQUE ID)
   // ---------------------------------------------------------------------
-  // Only the categories below are individually tracked with a unique,
-  // auto-generated Asset Code per unit (e.g. "CB001", "CB002", ...),
-  // stored as documents in each asset's `asset_items` subcollection.
-  // Every other category is a "bulk" asset — only its total [quantity]
-  // is stored, with no per-unit codes or subcollection.
   static const Map<String, String> trackedCategoryPrefixes = {
+    // Computers
     'Computer System': 'PC',
+    'Lenovo Computer System': 'LN',
+    'HP Computer': 'HP',
+    'VDI Computer': 'VD',
     'Chromebook': 'CB',
+
+    // Input Devices
+    'Mouse': 'MB',
+    'Keyboard': 'KB',
+    'Mic': 'MC',
+
+    // Display & Teaching
     'Projector': 'PJ',
-    'Router': 'RT',
-    'UPS': 'UPS',
-    'Interactive Board': 'IB',
     'Smart Board': 'SB',
+    'Interactive Board': 'IB',
     'Display Screen': 'DS',
     'Teleconference Screen': 'TS',
+    'LED Screen': 'LS',
+    'Projection Screen': 'PS',
+    'Google Board': 'GB',
+
+    // Networking Equipment
+    'Router': 'RT',
+    'Internet': 'IN',
+    'ONT': 'OT',
+    'Hub': 'HB',
+
+    // Audio & Video
+    'Sound System': 'SS',
+    'Sound Speaker': 'SP',
+    'CCTV Camera': 'CC',
     'EPTZ Camera': 'EC',
+    'Intercom': 'IC',
+
+    // Electrical Equipment
+    'AC': 'AC',
+    'Fan': 'FN',
+    'UPS': 'UPS',
   };
 
-  /// Returns `true` if [category] is individually tracked (i.e. gets
-  /// auto-generated Asset Codes and an `asset_items` subcollection).
   static bool isTrackedCategory(String category) =>
       trackedCategoryPrefixes.containsKey(category);
 
-  /// Returns the Asset Code prefix for a tracked [category], or `null`
-  /// if the category is a bulk (untracked) category.
   static String? prefixForCategory(String category) => trackedCategoryPrefixes[category];
 
   // ---------------------------------------------------------------------
@@ -131,14 +145,13 @@ class AssetConstants {
   static const String defaultItemStatus = 'Available';
   static const String defaultItemRemarks = '';
 
-  // ---------------------------------------------------------------------
-  // Firestore subcollection / meta document names
-  // ---------------------------------------------------------------------
+  // ================================================================
+  // FIRESTORE SUBCOLLECTION / META DOCUMENT NAMES (ADDED)
+  // ================================================================
   static const String assetItemsSubcollection = 'asset_items';
   static const String metaCollection = 'meta';
   static const String assetCounterDoc = 'asset_counter';
 
   /// Prefix used for the friendly, sequential asset document ID
-  /// (e.g. "AST001", "AST002", ...).
   static const String assetIdPrefix = 'AST';
 }

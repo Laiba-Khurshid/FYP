@@ -13,17 +13,6 @@ import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
 
-/// The Signup screen for AssetFlow.
-///
-/// Collects full name, email, password, confirm password, department,
-/// and role. Only **Student** additionally shows a Roll Number field,
-/// and only **Teacher** additionally shows an Employee ID field — HOD,
-/// Vice Principal, Principal, and Admin show neither, since only
-/// Student/Teacher registrations are gated by the authorized-users
-/// allow-list. On success, Student/Teacher accounts are Pending (an
-/// Admin must approve them first); every other role is Approved
-/// immediately. Either way, the user is routed back to Login with an
-/// appropriate message.
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -64,9 +53,6 @@ class _SignupScreenState extends State<SignupScreen> {
   bool get _isStudentRole => _selectedRole == AppConstants.roleStudent;
   bool get _isTeacherRole => _selectedRole == AppConstants.roleTeacher;
 
-  /// Only Student and Teacher registrations are gated by an identifier
-  /// + the authorized-users allow-list + admin approval. HOD, Vice
-  /// Principal, Principal, and Admin need neither.
   bool get _requiresIdentifier => _isStudentRole || _isTeacherRole;
 
   Future<void> _handleSignup(AuthViewModel authViewModel) async {
@@ -149,18 +135,18 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  'Join AssetFlow',
-                  style: AppStyles.heading2(),
-                ),
-                const SizedBox(height: AppConstants.paddingXSmall),
-                Text(
-                  'Create an account for ${AppConstants.departmentName}.',
-                  style: AppStyles.bodyMedium(color: AppColors.textSecondary),
-                ),
+                // ============================================================
+                // LOGO + HEADER (CENTER-ALIGNED)
+                // ============================================================
+                _buildHeader(),
                 const SizedBox(height: AppConstants.paddingLarge),
+
+                // ============================================================
+                // FORM FIELDS
+                // ============================================================
                 CustomTextField(
                   label: 'Full Name',
                   hint: 'e.g. Ayesha Khan',
@@ -203,9 +189,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 _buildDepartmentField(),
                 const SizedBox(height: AppConstants.paddingMedium),
                 _buildRoleSelector(),
-                // Only Student (Roll Number) and Teacher (Employee ID)
-                // show an identifier field. HOD/Vice Principal/
-                // Principal/Admin show neither.
                 if (_requiresIdentifier) ...[
                   const SizedBox(height: AppConstants.paddingMedium),
                   CustomTextField(
@@ -227,6 +210,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: AppConstants.paddingLarge),
                 _buildLoginPrompt(),
+                const SizedBox(height: AppConstants.paddingMedium),
               ],
             ),
           ),
@@ -235,9 +219,82 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  /// Department is fixed to the single supported department for this
-  /// project, shown as a read-only field for transparency and to keep
-  /// the data model consistent for future multi-department support.
+  // ============================================================
+  // HEADER WITH LOGO + TEXT (CENTER-ALIGNED)
+  // ============================================================
+  Widget _buildHeader() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Logo - CS AssetFlow
+        Container(
+          height: 80,
+          width: 80,
+          decoration: BoxDecoration(
+            gradient: AppColors.primaryGradient,
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.3),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+            child: Image.asset(
+              'lib/images/logo.png',
+              height: 80,
+              width: 80,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'CS',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textOnPrimary,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Text(
+                        'AssetFlow',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textOnPrimary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: AppConstants.paddingLarge),
+        Text(
+          'Join CS AssetFlow',
+          style: AppStyles.heading2(),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppConstants.paddingXSmall),
+        Text(
+          'Create an account for department assets.',
+          style: AppStyles.bodyMedium(color: AppColors.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
   Widget _buildDepartmentField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,8 +358,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 if (value == null) return;
                 setState(() {
                   _selectedRole = value;
-                  // Clear any previously entered identifier when
-                  // switching to/from a role that doesn't need one.
                   _identifierController.clear();
                 });
               },
@@ -322,7 +377,7 @@ class _SignupScreenState extends State<SignupScreen> {
           GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: Text(
-              'Login',
+              'Sign in',
               style: AppStyles.bodySmall(color: AppColors.primary).copyWith(fontWeight: FontWeight.w600),
             ),
           ),

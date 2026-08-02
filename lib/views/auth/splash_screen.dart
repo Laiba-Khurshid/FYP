@@ -76,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     // Splash time increased: 3000ms se 4500ms (4.5 seconds)
     await Future.wait<void>([
-      Future.delayed(const Duration(milliseconds: 5000)),
+      Future.delayed(const Duration(milliseconds: 4500)),
       authViewModel.tryAutoLogin(),
     ]);
 
@@ -132,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 const Spacer(flex: 2),
                 _buildLogo(),
                 const SizedBox(height: AppConstants.paddingLarge),
-                // CS AssetFlow - 1 LINE MEIN
+
                 SlideTransition(
                   position: _slideAnimation,
                   child: Text(
