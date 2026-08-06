@@ -50,12 +50,6 @@ import 'package:project/views/audit/audit_history_screen.dart';
 import 'package:project/views/asset_manager/verify_user_screen.dart';
 
 /// Centralized route name constants and route generation for AssetFlow.
-///
-/// Every navigable screen in the app must be registered here using a
-/// named route rather than pushed via direct widget construction. This
-/// keeps navigation predictable and testable as new modules (assets,
-/// complaints, maintenance, notifications, reports, profile) are added
-/// in later phases.
 class AppRoutes {
   AppRoutes._();
 
@@ -67,7 +61,7 @@ class AppRoutes {
   static const String signup = '/signup';
   static const String forgotPassword = '/forgot-password';
 
-  // Role-based dashboard routes. Every role has its own dashboard.
+  // Role-based dashboard routes
   static const String adminDashboard = '/admin-dashboard';
   static const String hodDashboard = '/hod-dashboard';
   static const String vicePrincipalDashboard = '/vice-principal-dashboard';
@@ -75,48 +69,43 @@ class AppRoutes {
   static const String teacherDashboard = '/teacher-dashboard';
   static const String studentDashboard = '/student-dashboard';
 
-  // Asset Management module routes.
+  // Asset Management module routes
   static const String assetsScreen = '/assets';
   static const String addAsset = '/add-asset';
   static const String editAsset = '/edit-asset';
   static const String assetDetails = '/asset-details';
 
-  // Complaint Management module routes.
+  // Complaint Management module routes
   static const String complaintsScreen = '/complaints';
   static const String addComplaint = '/add-complaint';
   static const String complaintDetails = '/complaint-details';
 
-  // Maintenance Management module routes.
+  // Maintenance Management module routes
   static const String maintenanceList = '/maintenance';
   static const String addMaintenance = '/add-maintenance';
   static const String editMaintenance = '/edit-maintenance';
   static const String maintenanceDetails = '/maintenance-details';
 
-  // Reports & Analytics module routes.
+  // Reports & Analytics module routes
   static const String reportsScreen = '/reports';
   static const String reportDetails = '/report-details';
 
-  // Notifications module route.
+  // Notifications module route
   static const String notificationsScreen = '/notifications';
 
-  // Profile Management module routes.
+  // Profile Management module routes
   static const String profileScreen = '/profile';
   static const String editProfile = '/edit-profile';
 
-  // Settings module route.
+  // Settings module route
   static const String settingsScreen = '/settings';
 
-  // Audit History module route (Admin-only).
+  // Audit History module route (Admin-only)
   static const String auditHistoryScreen = '/audit-history';
 
-  // User Verification module route (Admin-only).
+  // User Verification module route (Admin-only)
   static const String verifyUsersScreen = '/verify-users';
 
-  /// Resolves the correct dashboard route for a given user [role] (read
-  /// from Firestore via `UserModel.role` — never chosen manually).
-  ///
-  /// Falls back to [studentDashboard] for any unrecognized role so
-  /// navigation never fails outright after a successful login/signup.
   static String dashboardForRole(String role) {
     switch (role) {
       case AppConstants.roleAdmin:
@@ -136,11 +125,6 @@ class AppRoutes {
     }
   }
 
-  /// Generates routes for [MaterialApp.onGenerateRoute].
-  ///
-  /// Using onGenerateRoute (instead of a static `routes` map) allows
-  /// future routes to accept arguments (e.g. asset id, complaint id)
-  /// without changing the app's route registration pattern.
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case splash:
@@ -259,13 +243,13 @@ class AppRoutes {
         return _buildRoute(const EditProfileScreen(), settings);
 
       case settingsScreen:
-        return _buildRoute(const SettingsScreen(), settings);
+        return _buildRoute(const SettingsScreen(), settings);  // ✅ Added
 
       case auditHistoryScreen:
-        return _buildRoute(const AuditHistoryScreen(), settings);
+        return _buildRoute(const AuditHistoryScreen(), settings);  // ✅ Added
 
       case verifyUsersScreen:
-        return _buildRoute(const VerifyUsersScreen(), settings);
+        return _buildRoute(const VerifyUsersScreen(), settings);  // ✅ Added
 
       default:
         return _buildRoute(
@@ -286,10 +270,6 @@ class AppRoutes {
     );
   }
 
-  /// Builds a route that requires an [AssetModel] passed as
-  /// [RouteSettings.arguments] (used by [editAsset] and [assetDetails]).
-  /// Falls back to a friendly error screen if the argument is missing
-  /// or of the wrong type, rather than crashing.
   static PageRoute<dynamic> _buildAssetArgumentRoute(
       RouteSettings settings, {
         required Widget Function(AssetModel asset) builder,
@@ -308,10 +288,6 @@ class AppRoutes {
     return _buildRoute(builder(asset), settings);
   }
 
-  /// Builds a route that requires a [ComplaintModel] passed as
-  /// [RouteSettings.arguments] (used by [complaintDetails]). Falls back
-  /// to a friendly error screen if the argument is missing or of the
-  /// wrong type, rather than crashing.
   static PageRoute<dynamic> _buildComplaintArgumentRoute(
       RouteSettings settings, {
         required Widget Function(ComplaintModel complaint) builder,
@@ -330,10 +306,6 @@ class AppRoutes {
     return _buildRoute(builder(complaint), settings);
   }
 
-  /// Builds a route that requires a [MaintenanceModel] passed as
-  /// [RouteSettings.arguments] (used by [editMaintenance] and
-  /// [maintenanceDetails]). Falls back to a friendly error screen if the
-  /// argument is missing or of the wrong type, rather than crashing.
   static PageRoute<dynamic> _buildMaintenanceArgumentRoute(
       RouteSettings settings, {
         required Widget Function(MaintenanceModel record) builder,

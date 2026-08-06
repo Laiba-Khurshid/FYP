@@ -14,30 +14,49 @@ import 'package:project/viewmodels/theme_viewmodel.dart';
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/setting_tile.dart';
 
-/// The Settings screen for AssetFlow — available to every authenticated
-/// role.
-///
-/// Covers theme selection (Light / Dark / System, persisted via
-/// [ThemeViewModel]), informational dialogs (About, Privacy Policy,
-/// Terms & Conditions, Help & Support), a Logout action, and — for
-/// Admin only — a section of destructive/seeding admin tools plus a
-/// link to Audit History.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  void _showComingSoon(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            '$feature will be available in a future update.',
+            style: AppStyles.bodyMedium(color: AppColors.textOnPrimary),
+          ),
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+          ),
+        ),
+      );
+  }
 
   void _showInfoDialog(BuildContext context, {required String title, required String content}) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+        ),
         title: Text(title, style: AppStyles.heading4()),
         content: SingleChildScrollView(
-          child: Text(content, style: AppStyles.bodyMedium(color: AppColors.textSecondary)),
+          child: Text(
+            content,
+            style: AppStyles.bodyMedium(color: AppColors.textSecondary),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text('Close', style: AppStyles.bodyMedium(color: AppColors.primary)),
+            child: Text(
+              'Close',
+              style: AppStyles.bodyMedium(color: AppColors.primary),
+            ),
           ),
         ],
       ),
@@ -48,14 +67,25 @@ class SettingsScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+        ),
         title: Text('Logout?', style: AppStyles.heading4()),
-        content: Text('You will need to log in again to access your account.', style: AppStyles.bodyMedium(color: AppColors.textSecondary)),
+        content: Text(
+          'You will need to log in again to access your account.',
+          style: AppStyles.bodyMedium(color: AppColors.textSecondary),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: Text('Cancel', style: AppStyles.bodyMedium())),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text('Cancel', style: AppStyles.bodyMedium()),
+          ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text('Logout', style: AppStyles.bodyMedium(color: AppColors.error)),
+            child: Text(
+              'Logout',
+              style: AppStyles.bodyMedium(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -65,7 +95,18 @@ class SettingsScreen extends StatelessWidget {
 
     await context.read<AuthViewModel>().logout();
     if (!context.mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRoutes.login,
+          (route) => false,
+    );
+  }
+
+  void _navigateToRoute(BuildContext context, String routeName, String featureName) {
+    try {
+      Navigator.of(context).pushNamed(routeName);
+    } catch (e) {
+      _showComingSoon(context, featureName);
+    }
   }
 
   @override
@@ -76,28 +117,59 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(title: Text('Settings', style: AppStyles.heading4())),
+      appBar: AppBar(
+        title: Text('Settings', style: AppStyles.heading4()),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppConstants.paddingLarge),
           children: [
+            // ============================================================
+            // ACCOUNT SECTION
+            // ============================================================
             Text('Account', style: AppStyles.label(color: AppColors.textSecondary)),
             const SizedBox(height: AppConstants.paddingSmall),
             SettingTile(
               icon: Icons.person_outline_rounded,
               title: 'My Profile',
               subtitle: 'View and edit your profile',
-              onTap: () => Navigator.of(context).pushNamed(AppRoutes.profileScreen),
+              onTap: () => _navigateToRoute(context, AppRoutes.profileScreen, 'Profile'),
             ),
             const SizedBox(height: AppConstants.paddingLarge),
+
+            // ============================================================
+            // APPEARANCE SECTION
+            // ============================================================
             Text('Appearance', style: AppStyles.label(color: AppColors.textSecondary)),
             const SizedBox(height: AppConstants.paddingSmall),
-            _buildThemeOption(context, themeViewModel, ThemeMode.light, Icons.light_mode_outlined, 'Light Mode'),
+            _buildThemeOption(
+              context,
+              themeViewModel,
+              ThemeMode.light,
+              Icons.light_mode_outlined,
+              'Light Mode',
+            ),
             const SizedBox(height: AppConstants.paddingSmall),
-            _buildThemeOption(context, themeViewModel, ThemeMode.dark, Icons.dark_mode_outlined, 'Dark Mode'),
+            _buildThemeOption(
+              context,
+              themeViewModel,
+              ThemeMode.dark,
+              Icons.dark_mode_outlined,
+              'Dark Mode',
+            ),
             const SizedBox(height: AppConstants.paddingSmall),
-            _buildThemeOption(context, themeViewModel, ThemeMode.system, Icons.settings_suggest_outlined, 'System Theme'),
+            _buildThemeOption(
+              context,
+              themeViewModel,
+              ThemeMode.system,
+              Icons.settings_suggest_outlined,
+              'System Theme',
+            ),
             const SizedBox(height: AppConstants.paddingLarge),
+
+            // ============================================================
+            // ABOUT SECTION
+            // ============================================================
             Text('About', style: AppStyles.label(color: AppColors.textSecondary)),
             const SizedBox(height: AppConstants.paddingSmall),
             SettingTile(
@@ -143,6 +215,10 @@ class SettingsScreen extends StatelessWidget {
                 'Need help? Contact your lab HOD for complaint or asset issues, or reach the department office directly for account access problems.',
               ),
             ),
+
+            // ============================================================
+            // ADMIN SECTION (Only visible to Admin)
+            // ============================================================
             if (isAdmin) ...[
               const SizedBox(height: AppConstants.paddingLarge),
               Text('Admin', style: AppStyles.label(color: AppColors.textSecondary)),
@@ -151,19 +227,32 @@ class SettingsScreen extends StatelessWidget {
                 icon: Icons.history_rounded,
                 title: 'Audit History',
                 subtitle: 'View a log of important system activity',
-                onTap: () => Navigator.of(context).pushNamed(AppRoutes.auditHistoryScreen),
+                onTap: () => _navigateToRoute(
+                  context,
+                  AppRoutes.auditHistoryScreen,
+                  'Audit History',
+                ),
               ),
               const SizedBox(height: AppConstants.paddingSmall),
               SettingTile(
                 icon: Icons.verified_user_outlined,
                 title: 'Verify Users',
                 subtitle: 'Approve or reject pending registrations',
-                onTap: () => Navigator.of(context).pushNamed(AppRoutes.verifyUsersScreen),
+                onTap: () => _navigateToRoute(
+                  context,
+                  AppRoutes.verifyUsersScreen,
+                  'Verify Users',
+                ),
               ),
               const SizedBox(height: AppConstants.paddingSmall),
               _buildAdminToolsCard(context),
             ],
+
             const SizedBox(height: AppConstants.paddingLarge),
+
+            // ============================================================
+            // LOGOUT BUTTON
+            // ============================================================
             CustomButton(
               label: 'Logout',
               type: CustomButtonType.danger,
@@ -177,7 +266,13 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildThemeOption(BuildContext context, ThemeViewModel viewModel, ThemeMode mode, IconData icon, String label) {
+  Widget _buildThemeOption(
+      BuildContext context,
+      ThemeViewModel viewModel,
+      ThemeMode mode,
+      IconData icon,
+      String label,
+      ) {
     final isSelected = viewModel.themeMode == mode;
     return SettingTile(
       icon: icon,
@@ -199,18 +294,33 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildAdminToolsCard(BuildContext context) {
     final adminTools = context.watch<AdminToolsViewModel>();
 
-    Future<void> confirmAndRun(String title, String message, Future<void> Function() action) async {
+    Future<void> confirmAndRun(
+        String title,
+        String message,
+        Future<void> Function() action,
+        ) async {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+          ),
           title: Text(title, style: AppStyles.heading4()),
-          content: Text(message, style: AppStyles.bodyMedium(color: AppColors.textSecondary)),
+          content: Text(
+            message,
+            style: AppStyles.bodyMedium(color: AppColors.textSecondary),
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: Text('Cancel', style: AppStyles.bodyMedium())),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text('Cancel', style: AppStyles.bodyMedium()),
+            ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text('Confirm', style: AppStyles.bodyMedium(color: AppColors.error)),
+              child: Text(
+                'Confirm',
+                style: AppStyles.bodyMedium(color: AppColors.error),
+              ),
             ),
           ],
         ),
@@ -228,7 +338,9 @@ class SettingsScreen extends StatelessWidget {
               adminTools.errorMessage ?? '$title completed successfully.',
               style: AppStyles.bodyMedium(color: AppColors.textOnPrimary),
             ),
-            backgroundColor: adminTools.errorMessage != null ? AppColors.error : AppColors.success,
+            backgroundColor: adminTools.errorMessage != null
+                ? AppColors.error
+                : AppColors.success,
             duration: AppConstants.snackBarDuration,
             behavior: SnackBarBehavior.floating,
           ),
@@ -245,7 +357,10 @@ class SettingsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Demo Data Tools', style: AppStyles.bodyLarge().copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Demo Data Tools',
+            style: AppStyles.bodyLarge().copyWith(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 4),
           Text(
             'These actions modify Firestore data directly and cannot be undone.',
@@ -255,7 +370,9 @@ class SettingsScreen extends StatelessWidget {
           if (adminTools.isRunning)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppConstants.paddingMedium),
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
             )
           else ...[
             CustomButton(

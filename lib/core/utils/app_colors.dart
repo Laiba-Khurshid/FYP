@@ -1,16 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Centralized color palette for the AssetFlow application.
-///
-/// All colors used across the app must be referenced from this class
-/// to guarantee visual consistency and to make future theme changes
-/// (e.g. rebranding, dark mode adjustments) a single-point edit.
 class AppColors {
   AppColors._();
-
-  // ---------------------------------------------------------------------
-  // Brand colors
-  // ---------------------------------------------------------------------
   static const Color primary = Color(0xFF1A56DB);
   static const Color primaryDark = Color(0xFF123E9E);
   static const Color primaryLight = Color(0xFF5B85E8);
