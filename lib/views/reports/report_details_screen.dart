@@ -13,11 +13,7 @@ import 'package:project/viewmodels/report_viewmodel.dart';
 
 import 'package:project/widgets/custom_button.dart';
 
-/// The Report Details screen for AssetFlow.
-///
-/// Renders a generated [ReportModel] as a set of summary tables (the
-/// exact figures also written into the exported PDF) and lets Admin
-/// download/share/print the report via [CustomButton] → `printing`.
+
 class ReportDetailsScreen extends StatelessWidget {
   final ReportModel report;
 

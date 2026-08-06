@@ -1,25 +1,16 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
-
+import 'package:project/core/utils/constants.dart';
+import 'package:project/core/utils/validators.dart';
 import 'package:project/viewmodels/asset_viewmodel.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
-
-import 'package:project/widgets/asset_form.dart';
 import 'package:project/widgets/custom_button.dart';
+import 'package:project/widgets/custom_textfield.dart';
 
-/// The Add Asset screen for AssetFlow (Admin/HOD only).
-///
-/// Collects all fields required to create a new asset, optionally
-/// uploads an image, and delegates creation — including automatic
-/// Asset Code generation for individually-tracked categories — to
-/// [AssetViewModel.addAsset].
 class AddAssetScreen extends StatefulWidget {
   const AddAssetScreen({super.key});
 
@@ -35,8 +26,7 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
 
   String? _selectedCategory;
   String? _selectedLab;
-  DateTime? _purchaseDate;
-  File? _pickedImageFile;  // Using File instead of Uint8List
+  DateTime? _selectedDate;
 
   @override
   void dispose() {
@@ -46,71 +36,32 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final source = await _chooseImageSource();
-    if (source == null) return;
-
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source, imageQuality: 80, maxWidth: 1600);
-    if (picked == null) return;
-
-    final file = File(picked.path);
-    setState(() => _pickedImageFile = file);
-  }
-
-  Future<ImageSource?> _chooseImageSource() {
-    return showModalBottomSheet<ImageSource>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SafeArea(
-        child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppConstants.borderRadiusXLarge)),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: AppConstants.paddingLarge),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined, color: AppColors.primary),
-                title: Text('Take a Photo', style: AppStyles.bodyMedium()),
-                onTap: () => Navigator.of(context).pop(ImageSource.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
-                title: Text('Choose from Gallery', style: AppStyles.bodyMedium()),
-                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickPurchaseDate() async {
+  Future<void> _selectDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _purchaseDate ?? now,
-      firstDate: DateTime(now.year - 15),
+      initialDate: now,
+      firstDate: DateTime(2020),
       lastDate: now,
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(primary: AppColors.primary),
-        ),
-        child: child!,
-      ),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: AppColors.textOnPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
-      setState(() => _purchaseDate = picked);
+      setState(() => _selectedDate = picked);
     }
   }
 
-  Future<void> _handleSave(AssetViewModel viewModel) async {
+  Future<void> _handleSave(AssetViewModel viewModel, AuthViewModel authViewModel) async {
     FocusScope.of(context).unfocus();
-
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedCategory == null) {
@@ -121,32 +72,36 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
       _showSnack('Please select a lab.', isError: true);
       return;
     }
-    if (_purchaseDate == null) {
+    if (_selectedDate == null) {
       _showSnack('Please select a purchase date.', isError: true);
       return;
     }
 
-    final actor = context.read<AuthViewModel>().currentUser;
+    final user = authViewModel.currentUser;
+    if (user == null) {
+      _showSnack('Your session has expired. Please log in again.', isError: true);
+      return;
+    }
+
     final success = await viewModel.addAsset(
       assetName: _assetNameController.text,
       category: _selectedCategory!,
       labName: _selectedLab!,
-      quantity: int.parse(_quantityController.text.trim()),
-      purchaseDate: _purchaseDate!,
+      quantity: int.parse(_quantityController.text),
+      purchaseDate: _selectedDate!,
       location: _locationController.text,
-      actorId: actor?.uid ?? '',
-      actorName: actor?.fullName ?? '',
-      actorRole: actor?.role ?? '',
-      imageFile: _pickedImageFile,  // Passing File
+      actorId: user.uid,
+      actorName: user.fullName,
+      actorRole: user.role,
     );
 
     if (!mounted) return;
 
     if (success) {
       Navigator.of(context).pop();
-      _showSnack('${_assetNameController.text.trim()} was added successfully.');
+      _showSnack('Asset added successfully.');
     } else {
-      _showSnack(viewModel.errorMessage ?? 'Could not add the asset. Please try again.', isError: true);
+      _showSnack(viewModel.errorMessage ?? 'Could not add asset. Please try again.', isError: true);
     }
   }
 
@@ -159,14 +114,17 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
           backgroundColor: isError ? AppColors.error : AppColors.success,
           duration: AppConstants.snackBarDuration,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+          ),
         ),
       );
   }
 
   @override
   Widget build(BuildContext context) {
-    final assetViewModel = context.watch<AssetViewModel>();
+    final viewModel = context.watch<AssetViewModel>();
+    final authViewModel = context.watch<AuthViewModel>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -181,22 +139,99 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AssetForm(
-                  assetNameController: _assetNameController,
-                  quantityController: _quantityController,
-                  locationController: _locationController,
-                  selectedCategory: _selectedCategory,
-                  onCategoryChanged: (value) => setState(() => _selectedCategory = value),
-                  selectedLab: _selectedLab,
-                  onLabChanged: (value) => setState(() => _selectedLab = value),
-                  purchaseDate: _purchaseDate,
-                  onPickDate: _pickPurchaseDate,
-                  pickedImageFile: _pickedImageFile,  // Passing File
-                  existingImageUrl: null,
-                  onPickImage: _pickImage,
-                  onRemoveImage: _pickedImageFile != null ? () => setState(() => _pickedImageFile = null) : null,
+                // Asset Name
+                CustomTextField(
+                  label: 'Asset Name',
+                  hint: 'e.g. Dell OptiPlex Desktop',
+                  controller: _assetNameController,
+                  prefixIcon: Icons.inventory_2_outlined,
+                  validator: Validators.validateAssetName,
+                ),
+                const SizedBox(height: AppConstants.paddingMedium),
+
+                // Category
+                Text('Category', style: AppStyles.label()),
+                const SizedBox(height: AppConstants.paddingSmall),
+                _buildDropdown<String>(
+                  hint: 'Select a category',
+                  value: _selectedCategory,
+                  items: AssetConstants.allCategories,
+                  labelBuilder: (category) => category,
+                  onChanged: (value) => setState(() => _selectedCategory = value),
+                ),
+                const SizedBox(height: AppConstants.paddingMedium),
+
+                // Lab
+                Text('Lab', style: AppStyles.label()),
+                const SizedBox(height: AppConstants.paddingSmall),
+                _buildDropdown<String>(
+                  hint: 'Select a lab',
+                  value: _selectedLab,
+                  items: AssetConstants.labs,
+                  labelBuilder: (lab) => lab,
+                  onChanged: (value) => setState(() => _selectedLab = value),
+                ),
+                const SizedBox(height: AppConstants.paddingMedium),
+
+                // Quantity
+                CustomTextField(
+                  label: 'Quantity',
+                  hint: 'e.g. 25',
+                  controller: _quantityController,
+                  prefixIcon: Icons.numbers_rounded,
+                  keyboardType: TextInputType.number,
+                  validator: Validators.validateQuantity,
+                ),
+                const SizedBox(height: AppConstants.paddingMedium),
+
+                // Purchase Date
+                Text('Purchase Date', style: AppStyles.label()),
+                const SizedBox(height: AppConstants.paddingSmall),
+                InkWell(
+                  onTap: _selectDate,
+                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.paddingMedium,
+                      vertical: AppConstants.paddingMedium,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today_rounded, color: AppColors.textSecondary),
+                        const SizedBox(width: AppConstants.paddingMedium),
+                        Expanded(
+                          child: Text(
+                            _selectedDate != null
+                                ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                                : 'Select purchase date',
+                            style: _selectedDate != null
+                                ? AppStyles.bodyLarge()
+                                : AppStyles.bodyMedium(color: AppColors.textHint),
+                          ),
+                        ),
+                        const Icon(Icons.arrow_drop_down_rounded, color: AppColors.textSecondary),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppConstants.paddingMedium),
+
+                // Location
+                CustomTextField(
+                  label: 'Location',
+                  hint: 'e.g. Row A–C, Front Wall, Server Corner',
+                  controller: _locationController,
+                  prefixIcon: Icons.place_outlined,
+                  validator: (value) => Validators.validateRequired(value, fieldName: 'Location'),
                 ),
                 const SizedBox(height: AppConstants.paddingXLarge),
+
+                // Buttons
                 Row(
                   children: [
                     Expanded(
@@ -210,8 +245,8 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
                     Expanded(
                       child: CustomButton(
                         label: 'Save',
-                        isLoading: assetViewModel.isSubmitting,
-                        onPressed: () => _handleSave(assetViewModel),
+                        isLoading: viewModel.isSubmitting,
+                        onPressed: () => _handleSave(viewModel, authViewModel),
                       ),
                     ),
                   ],
@@ -220,6 +255,45 @@ class _AddAssetScreenState extends State<AddAssetScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required String hint,
+    required T? value,
+    required List<T> items,
+    required String Function(T item) labelBuilder,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        border: Border.all(color: AppColors.border),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          isExpanded: true,
+          hint: Text(hint, style: AppStyles.bodyMedium(color: AppColors.textHint)),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
+          style: AppStyles.bodyLarge(),
+          items: [
+            DropdownMenuItem<T>(
+              value: null,
+              child: Text(hint, style: AppStyles.bodyMedium(color: AppColors.textHint)),
+            ),
+            ...items.map((item) {
+              return DropdownMenuItem<T>(
+                value: item,
+                child: Text(labelBuilder(item), style: AppStyles.bodyLarge()),
+              );
+            }),
+          ],
+          onChanged: onChanged,
         ),
       ),
     );

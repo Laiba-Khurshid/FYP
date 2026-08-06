@@ -12,8 +12,7 @@ import 'package:intl/intl.dart';
 
 
 
-/// The result returned by [MaintenanceFilterBottomSheet] when the user
-/// taps Apply.
+
 class MaintenanceFilterResult {
   final String? status;
   final String? type;

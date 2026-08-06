@@ -6,17 +6,9 @@ import 'package:flutter/material.dart';
 
 import '../models/asset_model.dart';
 import '../services/asset_service.dart';
-
-/// Sort options available on the Assets screen.
 enum AssetSortOption { nameAscending, nameDescending, newestFirst, oldestFirst }
 
-/// The ViewModel for the entire Asset Management module (list, search,
-/// filter, sort, add, edit, delete, and the per-asset Asset Code list).
-///
-/// Owns all UI-facing state and delegates every Firestore/Storage
-/// operation to [AssetService]. Screens interact with this class
-/// exclusively through [Provider] / [Consumer] — no Firebase calls are
-/// ever made directly from the UI.
+
 class AssetViewModel extends ChangeNotifier {
   final AssetService _assetService;
 
@@ -115,25 +107,19 @@ class AssetViewModel extends ChangeNotifier {
     );
   }
 
-  /// Public wrapper around _subscribeToAssets() for external calls
-  /// (e.g., from AssetsScreen.initState).
+
   void subscribe() {
     _subscribeToAssets();
   }
 
-  /// Manually re-subscribes to the asset stream — used by
-  /// pull-to-refresh. Firestore streams already push live updates, so
-  /// this mainly exists to give the user visible refresh feedback and
-  /// to recover after a stream error.
+
   Future<void> refreshAssets() async {
     _subscribeToAssets();
-    // Give the RefreshIndicator a brief, visible spin even on a fast
-    // local cache hit.
+
     await Future.delayed(const Duration(milliseconds: 400));
   }
 
-  /// Streams the Asset Codes generated for one individually-tracked
-  /// asset, for the Asset Details screen.
+
   Stream<List<AssetItemModel>> streamAssetItems(String assetId) {
     return _assetService.streamAssetItems(assetId);
   }
@@ -180,12 +166,6 @@ class AssetViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // -----------------------------------------------------------------
-  // Create
-  // -----------------------------------------------------------------
-
-  /// Adds a new asset. Returns `true` on success; on failure,
-  /// [errorMessage] is populated and `false` is returned.
   Future<bool> addAsset({
     required String assetName,
     required String category,
@@ -281,9 +261,6 @@ class AssetViewModel extends ChangeNotifier {
     }
   }
 
-  // -----------------------------------------------------------------
-  // Delete
-  // -----------------------------------------------------------------
 
   /// Deletes an asset. Returns `true` on success. The caller must have
   /// already shown a confirmation dialog before calling this.
@@ -309,12 +286,6 @@ class AssetViewModel extends ChangeNotifier {
     }
   }
 
-  // -----------------------------------------------------------------
-  // Demo data
-  // -----------------------------------------------------------------
-
-  /// Seeds a small representative demo dataset (no-op if the `assets`
-  /// collection already has data). Returns `true` on success.
   Future<bool> seedDemoData() async {
     _errorMessage = null;
     _setSubmitting(true);

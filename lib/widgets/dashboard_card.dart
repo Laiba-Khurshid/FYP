@@ -4,14 +4,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A general-purpose horizontal card used throughout dashboards for
-/// list-style sections (e.g. a welcome card, a highlighted section, or
-/// a single row summarizing a module before it has its own screen).
-///
-/// Unlike [SummaryCard] (grid stat tile) and [QuickActionCard] (tappable
-/// action tile), [DashboardCard] is the flexible building block: a
-/// leading [icon], [title], optional [subtitle], optional trailing
-/// [count] badge, and an optional [onTap] / [trailing] widget.
+
 class DashboardCard extends StatelessWidget {
   final IconData icon;
   final String title;

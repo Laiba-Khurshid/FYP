@@ -14,12 +14,7 @@ import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
 import 'package:project/widgets/quick_action_card.dart';
 import 'package:project/widgets/summary_card.dart';
-/// The Principal Dashboard for AssetFlow.
-///
-/// The Principal is the final authority in the escalation chain: this
-/// dashboard surfaces only Final Escalations (complaints the Vice
-/// Principal could not resolve), Reports, and Notifications — no asset
-/// management access, per the role's permission set.
+
 class PrincipalDashboard extends StatefulWidget {
   const PrincipalDashboard({super.key});
 

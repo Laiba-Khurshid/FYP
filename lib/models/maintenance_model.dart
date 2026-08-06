@@ -1,11 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Represents a single maintenance record as stored in the existing
-/// `maintenance` Firestore collection.
-///
-/// Every maintenance record belongs to exactly one complaint
-/// ([complaintId]) — per the module's workflow, a record is only ever
-/// created once that complaint has reached "In Progress".
 class MaintenanceModel {
   final String maintenanceId;
   final String complaintId;

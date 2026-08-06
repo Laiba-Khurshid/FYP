@@ -13,12 +13,7 @@ import 'package:project/viewmodels/maintenance_viewmodel.dart';
 
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
-/// The Add Maintenance screen for AssetFlow.
-///
-/// Reached only from an in-progress complaint (Admin-only action): the
-/// [complaint] being resolved is passed in as the required argument, so
-/// `complaintId`, `assetId`, `assetName`, and `labName` are carried over
-/// automatically rather than re-entered.
+
 class AddMaintenanceScreen extends StatefulWidget {
   final ComplaintModel complaint;
 

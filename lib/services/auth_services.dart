@@ -320,7 +320,7 @@ class AuthService {
   // Forgot password
   // -----------------------------------------------------------------
 
-  /// Sends a Firebase password-reset email to [email].
+
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
@@ -337,8 +337,6 @@ class AuthService {
   // Logout
   // -----------------------------------------------------------------
 
-  /// Signs the current user out of Firebase and clears the local
-  /// "remember me" session flag.
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
     await clearSession();
@@ -348,11 +346,6 @@ class AuthService {
   // Local session ("Remember Me") persistence
   // -----------------------------------------------------------------
 
-  /// Persists a lightweight local session flag so [tryAutoLogin] in the
-  /// ViewModel knows whether the last session opted in to "Remember Me".
-  /// Firebase itself already persists the auth token between app
-  /// launches; this flag lets us decide whether auto-login should be
-  /// attempted at all versus always forcing a fresh login.
   Future<void> saveSession({required String uid, required String role, required bool rememberMe}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConstants.prefKeyIsLoggedIn, rememberMe);
@@ -360,14 +353,13 @@ class AuthService {
     await prefs.setString(AppConstants.prefKeyUserRole, role);
   }
 
-  /// Returns `true` if the last login was performed with "Remember Me"
-  /// enabled and a Firebase session still exists.
+
   Future<bool> hasRememberedSession() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(AppConstants.prefKeyIsLoggedIn) ?? false;
   }
 
-  /// Clears the locally persisted session flag (called on logout).
+
   Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConstants.prefKeyIsLoggedIn);

@@ -43,13 +43,12 @@ import 'package:project/views/notifications/notifications_screen.dart';
 import 'package:project/views/profile/profile_screen.dart';
 import 'package:project/views/profile/edit_profile_screen.dart';
 
-import 'package:project/views/settings/setting_screen.dart';
+import 'package:project/views/settings/setting_screen.dart';  // FIXED: settings_screen (s ke saath)
 
 import 'package:project/views/audit/audit_history_screen.dart';
 
-import 'package:project/views/asset_manager/verify_user_screen.dart';
+import 'package:project/views/asset_manager/verify_user_screen.dart';  // FIXED: verify_users_screen (plural)
 
-/// Centralized route name constants and route generation for AssetFlow.
 class AppRoutes {
   AppRoutes._();
 
@@ -61,7 +60,6 @@ class AppRoutes {
   static const String signup = '/signup';
   static const String forgotPassword = '/forgot-password';
 
-  // Role-based dashboard routes
   static const String adminDashboard = '/admin-dashboard';
   static const String hodDashboard = '/hod-dashboard';
   static const String vicePrincipalDashboard = '/vice-principal-dashboard';
@@ -69,41 +67,32 @@ class AppRoutes {
   static const String teacherDashboard = '/teacher-dashboard';
   static const String studentDashboard = '/student-dashboard';
 
-  // Asset Management module routes
   static const String assetsScreen = '/assets';
   static const String addAsset = '/add-asset';
   static const String editAsset = '/edit-asset';
   static const String assetDetails = '/asset-details';
 
-  // Complaint Management module routes
   static const String complaintsScreen = '/complaints';
   static const String addComplaint = '/add-complaint';
   static const String complaintDetails = '/complaint-details';
 
-  // Maintenance Management module routes
   static const String maintenanceList = '/maintenance';
   static const String addMaintenance = '/add-maintenance';
   static const String editMaintenance = '/edit-maintenance';
   static const String maintenanceDetails = '/maintenance-details';
 
-  // Reports & Analytics module routes
   static const String reportsScreen = '/reports';
   static const String reportDetails = '/report-details';
 
-  // Notifications module route
   static const String notificationsScreen = '/notifications';
 
-  // Profile Management module routes
   static const String profileScreen = '/profile';
   static const String editProfile = '/edit-profile';
 
-  // Settings module route
-  static const String settingsScreen = '/settings';
+  static const String settingsScreen = '/settings';  // ✅ ADDED
 
-  // Audit History module route (Admin-only)
   static const String auditHistoryScreen = '/audit-history';
 
-  // User Verification module route (Admin-only)
   static const String verifyUsersScreen = '/verify-users';
 
   static String dashboardForRole(String role) {
@@ -242,14 +231,17 @@ class AppRoutes {
       case editProfile:
         return _buildRoute(const EditProfileScreen(), settings);
 
+    // ============================================================
+    // SETTINGS SCREEN ROUTE - YEH HONA CHAHIYE
+    // ============================================================
       case settingsScreen:
-        return _buildRoute(const SettingsScreen(), settings);  // ✅ Added
+        return _buildRoute(const SettingsScreen(), settings);
 
       case auditHistoryScreen:
-        return _buildRoute(const AuditHistoryScreen(), settings);  // ✅ Added
+        return _buildRoute(const AuditHistoryScreen(), settings);
 
       case verifyUsersScreen:
-        return _buildRoute(const VerifyUsersScreen(), settings);  // ✅ Added
+        return _buildRoute(const VerifyUsersScreen(), settings);
 
       default:
         return _buildRoute(

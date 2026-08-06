@@ -6,12 +6,6 @@ import 'package:flutter/material.dart';
 import '../models/notification_model.dart';
 import '../services/notification_service.dart';
 
-/// The ViewModel for the Notification module.
-///
-/// Owns all UI-facing state and delegates every Firestore operation to
-/// [NotificationService]. Screens interact with this class exclusively
-/// through [Provider] / [Consumer] — no Firebase calls are ever made
-/// directly from the UI.
 class NotificationViewModel extends ChangeNotifier {
   final NotificationService _notificationService;
 

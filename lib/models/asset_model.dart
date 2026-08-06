@@ -1,17 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-/// Represents one asset TYPE inside one laboratory, as stored in the
-/// `assets` Firestore collection.
-///
-/// One [AssetModel] document can represent many physical units (see
-/// [quantity]) — for categories that are individually tracked (see
-/// `AssetConstants.isTrackedCategory`), each physical unit additionally
-/// has its own [AssetItemModel] document inside this asset's
-/// `asset_items` subcollection.
-///
-/// This application is built exclusively for the BS Computer Science
-/// Department, so there is intentionally no `department` field — every
-/// asset implicitly belongs to that single department.
 class AssetModel {
   final String assetId;
   final String assetName;

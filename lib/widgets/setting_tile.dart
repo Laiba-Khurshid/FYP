@@ -4,9 +4,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A single row in the Settings screen — an icon, title, optional
-/// subtitle, and either a trailing chevron (tappable) or a custom
-/// trailing widget (e.g. a switch or radio button).
+
 class SettingTile extends StatelessWidget {
   final IconData icon;
   final String title;

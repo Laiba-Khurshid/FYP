@@ -1,12 +1,4 @@
-/// Represents a single generated report — Assets, Complaints,
-/// Maintenance, or Users.
-///
-/// Unlike the other models in this app, a report is NOT a Firestore
-/// document. Reports are computed on demand by [ReportService] by
-/// aggregating the existing `assets`, `complaints`, `maintenance`, and
-/// `users` collections, then held in memory (and optionally exported to
-/// PDF) rather than persisted — the underlying collections remain the
-/// single source of truth, so a report is always a fresh snapshot.
+
 class ReportModel {
   final String reportType;
   final DateTime generatedAt;

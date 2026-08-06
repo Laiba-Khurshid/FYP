@@ -4,12 +4,6 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A tappable action tile used in dashboard "Quick Actions" grids
-/// (e.g. Manage Assets, Complaints, Maintenance, Reports).
-///
-/// Optimized for icon + short label; supports an optional [subtitle]
-/// and an optional [count] badge (e.g. unread notification count) so
-/// the same widget can be reused once those modules are wired up.
 class QuickActionCard extends StatelessWidget {
   final IconData icon;
   final String title;

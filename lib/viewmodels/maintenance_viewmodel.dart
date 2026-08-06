@@ -9,19 +9,7 @@ import 'package:project/services/complaint_service.dart';
 import 'package:project/services/maintenance_service.dart';
 
 import 'package:project/core/utils/app_constants.dart';
-/// The ViewModel for the entire Maintenance Management module (role-based
-/// list, search, filter, and CRUD).
-///
-/// Owns all UI-facing state and delegates every Firestore operation to
-/// [MaintenanceService]. Screens interact with this class exclusively
-/// through [Provider] / [Consumer] — no Firebase calls are ever made
-/// directly from the UI.
-///
-/// Maintenance records don't store their own escalation/ownership info,
-/// so for roles beyond Admin/HOD this ViewModel additionally reads
-/// (read-only) from the existing, untouched [ComplaintService] to learn
-/// which complaint IDs that role may see, then asks [MaintenanceService]
-/// for only the maintenance records tied to those complaints.
+
 class MaintenanceViewModel extends ChangeNotifier {
   final MaintenanceService _maintenanceService;
   final ComplaintService _complaintService;

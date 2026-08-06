@@ -14,14 +14,6 @@ import 'package:project/viewmodels/theme_viewmodel.dart';
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/setting_tile.dart';
 
-/// The Settings screen for AssetFlow — available to every authenticated
-/// role.
-///
-/// Covers theme selection (Light / Dark / System, persisted via
-/// [ThemeViewModel]), informational dialogs (About, Privacy Policy,
-/// Terms & Conditions, Help & Support), a Logout action, and — for
-/// Admin only — a section of destructive/seeding admin tools plus a
-/// link to Audit History.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 

@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
-/// A reusable loading indicator with an optional message.
-///
-/// Used across the app whenever data is being fetched from Firestore,
-/// an operation is in progress, or a screen is awaiting async state.
+
 class LoadingWidget extends StatelessWidget {
   final String? message;
   final double size;

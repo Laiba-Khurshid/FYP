@@ -1,9 +1,5 @@
 import 'app_constants.dart';
 
-/// Collection of reusable static form-field validators.
-///
-/// Every validator returns `null` when the input is valid, or a
-/// human-readable error message string otherwise, matching the signature
 /// expected by [TextFormField.validator].
 class Validators {
   Validators._();
@@ -119,6 +115,39 @@ class Validators {
     }
     if (parsed <= 0) {
       return '$fieldName must be greater than zero';
+    }
+    return null;
+  }
+
+  // ================================================================
+  // NEW METHODS FOR ASSET SCREEN (ADDED)
+  // ================================================================
+
+  /// Validates asset name field.
+  static String? validateAssetName(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please enter an asset name';
+    }
+    if (value.trim().length < 2) {
+      return 'Asset name must be at least 2 characters';
+    }
+    if (value.trim().length > 100) {
+      return 'Asset name is too long (max 100 characters)';
+    }
+    return null;
+  }
+
+  /// Validates quantity field for assets.
+  static String? validateQuantity(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please enter a quantity';
+    }
+    final int? quantity = int.tryParse(value.trim());
+    if (quantity == null || quantity < 1) {
+      return 'Quantity must be a positive number';
+    }
+    if (quantity > 10000) {
+      return 'Quantity cannot exceed 10,000';
     }
     return null;
   }

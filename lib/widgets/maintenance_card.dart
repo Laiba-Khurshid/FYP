@@ -9,10 +9,7 @@ import 'package:project/core/utils/app_styles.dart';
 
 import 'package:project/widgets/maintenance_status_chip.dart';
 
-/// A single maintenance record shown in the Maintenance list screen.
-///
-/// Displays the affected asset, lab, technician, cost, and
-/// status/type chips. Tapping the card opens
+
 /// [MaintenanceDetailsScreen].
 class MaintenanceCard extends StatelessWidget {
   final MaintenanceModel record;

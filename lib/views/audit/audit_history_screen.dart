@@ -9,10 +9,7 @@ import 'package:project/viewmodels/audit_viewmodel.dart';
 
 import 'package:project/widgets/audit_tile.dart';
 
-/// The Audit History screen for AssetFlow (Admin-only).
-///
-/// Streams the most recent 200 entries from the `audit_logs`
-/// collection, with client-side search and a module filter.
+
 class AuditHistoryScreen extends StatefulWidget {
   const AuditHistoryScreen({super.key});
 

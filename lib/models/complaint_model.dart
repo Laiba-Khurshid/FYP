@@ -1,15 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Represents a single complaint as stored in the `complaints` Firestore
-/// collection.
-///
-/// A complaint always points at exactly one asset ([assetId]). For
-/// individually-tracked assets (see `AssetConstants.isTrackedCategory`),
-/// [assetCode] holds the specific unit's Asset Code (e.g. "CB014"). For
-/// bulk assets (chairs, tables, fans, etc.) there is no per-unit code —
-/// per the fixed 16-field schema for this collection, the affected
-/// quantity the reporter selected is instead prepended to [description]
-/// as "Affected Quantity: N" rather than stored as a separate field.
 class ComplaintModel {
   final String complaintId;
   final String assetId;

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A single tab item shown inside [BottomNavBar].
+
 class BottomNavItem {
   final IconData icon;
   final IconData activeIcon;
@@ -16,12 +16,7 @@ class BottomNavItem {
   });
 }
 
-/// A reusable bottom navigation bar used by role-based dashboards.
-///
-/// The caller supplies the current [currentIndex], the [items] to
-/// display, and an [onTap] callback. This keeps the widget fully
-/// stateless and reusable across Admin, Lab Incharge, Faculty, and
-/// Technician dashboards without duplicating styling logic.
+
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final List<BottomNavItem> items;

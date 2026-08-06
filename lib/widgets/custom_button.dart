@@ -4,13 +4,10 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// Button visual variants supported by [CustomButton].
+
 enum CustomButtonType { primary, secondary, outline, text, danger }
 
-/// A reusable, themeable button used across the entire AssetFlow app.
-///
-/// Supports a loading state, disabled state, leading icon, and multiple
-/// visual variants so screens never need to hand-roll button styling.
+
 class CustomButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;

@@ -11,13 +11,7 @@ import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
 import 'package:project/widgets/dashboard_card.dart';
 import 'package:project/widgets/quick_action_card.dart';
-/// The Teacher Dashboard for AssetFlow.
-///
-/// Gives Teachers quick access to viewing lab assets, submitting a
-/// complaint, checking their complaint history, and notifications —
-/// the same permission set as Students, but kept as its own dashboard
-/// screen since Teacher and Student are distinct roles in the college's
-/// hierarchy.
+
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
 

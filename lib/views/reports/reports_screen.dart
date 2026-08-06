@@ -11,13 +11,6 @@ import 'package:project/viewmodels/report_viewmodel.dart';
 
 import 'package:project/widgets/report_card.dart';
 
-/// The Reports screen for AssetFlow.
-///
-/// Lets Admin generate a fresh, on-demand report for Assets,
-/// Complaints, Maintenance, or Users. Tapping a card aggregates the
-/// current Firestore data (via [ReportViewModel.generateReport]) and
-/// opens [ReportDetailsScreen] with the result, from which it can be
-/// exported to PDF.
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 

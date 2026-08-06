@@ -4,13 +4,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A reusable realtime search bar used on the Assets screen.
-///
-/// Calls [onChanged] on every keystroke so the caller (typically
-/// [AssetViewModel.search]) can filter the asset list instantly by
-/// name, Asset ID, category, or lab. A trailing filter icon button
-/// (with an active-filter badge) is exposed via [onFilterTap] so search
-/// and filtering live in one compact control.
+
 class AssetSearchBar extends StatefulWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback? onFilterTap;

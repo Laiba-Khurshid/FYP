@@ -7,10 +7,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A single row in the Audit History screen's list.
-///
-/// Shows who did what, in which module, and when — with a module-based
-/// icon/color for quick visual scanning.
+
 class AuditTile extends StatelessWidget {
   final AuditLogModel log;
 

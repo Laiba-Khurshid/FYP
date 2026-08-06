@@ -1,14 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-/// Represents a single notification as stored in the `notifications`
-/// Firestore collection.
-///
-/// A notification is either targeted at one specific person
-/// ([userId] set, [role] empty) or broadcast to everyone holding a role
-/// (e.g. "whichever HOD is on duty") — in which case [userId] is left
-/// empty and [role] holds the target role. [relatedId] points back at
-/// the complaint or maintenance record that triggered it, so tapping a
-/// notification can deep-link straight to it.
 class NotificationModel {
   final String notificationId;
   final String title;

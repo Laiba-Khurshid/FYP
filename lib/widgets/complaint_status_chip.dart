@@ -4,9 +4,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A small rounded chip that displays a complaint's [status] with a
-/// consistent color and icon across the Complaint Management module
-/// (list cards, details screen, timeline).
+
 class ComplaintStatusChip extends StatelessWidget {
   final String status;
   final double fontSize;

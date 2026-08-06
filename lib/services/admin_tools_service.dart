@@ -12,13 +12,6 @@ class AdminToolsException implements Exception {
   String toString() => message;
 }
 
-/// Encapsulates the Admin-only data-management tools: seeding/resetting
-/// demo data and bulk-clearing complaints/maintenance records.
-///
-/// Reuses [AssetService] for all asset seeding/deletion (so the Asset
-/// module's Asset Code generation and `asset_items` handling is never
-/// duplicated here) and talks directly to the `complaints` and
-/// `maintenance` collections only for their bulk-clear operations.
 class AdminToolsService {
   final FirebaseFirestore _firestore;
   final AssetService _assetService;
@@ -29,9 +22,6 @@ class AdminToolsService {
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _assetService = assetService ?? AssetService();
 
-  /// Seeds the department's labs and a demo set of assets into the
-  /// existing `assets` collection. Safe to call repeatedly — a no-op if
-  /// assets already exist.
   Future<void> seedDemoData() async {
     try {
       await _assetService.seedDemoDataIfEmpty();
@@ -40,8 +30,7 @@ class AdminToolsService {
     }
   }
 
-  /// Deletes every existing asset (and its `asset_items`/Storage image)
-  /// then re-seeds the demo dataset fresh.
+
   Future<void> resetDemoData() async {
     try {
       await _assetService.deleteAllAssets();

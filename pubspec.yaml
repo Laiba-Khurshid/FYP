@@ -24,12 +24,11 @@ dependencies:
   google_fonts: ^6.2.1
   cupertino_icons: ^1.0.8
 
-  # Utilities (used by upcoming service layer: image picking for asset
-  # photos, local persistence for session state, connectivity checks)
+  # Utilities
   shared_preferences: ^2.3.2
   intl: ^0.19.0
   image_picker: ^1.1.2
-  image: ^4.0.0
+  image: ^4.0.0  # ✅ Image compression ke liye
 
   # Asset Management module
   cached_network_image: ^3.4.1
@@ -49,7 +48,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-
+  # ============================================================
+  # ASSETS - LOGO IMAGE
+  # ============================================================
   assets:
     - lib/images/logo.png
 

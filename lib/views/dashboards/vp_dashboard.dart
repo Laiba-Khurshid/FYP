@@ -14,12 +14,7 @@ import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
 import 'package:project/widgets/quick_action_card.dart';
 import 'package:project/widgets/summary_card.dart';
-/// The Vice Principal Dashboard for AssetFlow.
-///
-/// The Vice Principal oversees complaints that HOD-level resolution
-/// couldn't close in time: this dashboard surfaces only Escalated
-/// Complaints, Reports, and Notifications — no asset management access,
-/// per the role's permission set.
+
 class VicePrincipalDashboard extends StatefulWidget {
   const VicePrincipalDashboard({super.key});
 

@@ -7,9 +7,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// The header section of the Profile screen: avatar, full name, role
-/// badge, and department — shared by [ProfileScreen] and reusable
-/// wherever a compact identity summary is needed.
+
 class ProfileHeader extends StatelessWidget {
   final UserModel user;
   final VoidCallback? onEditAvatarTap;

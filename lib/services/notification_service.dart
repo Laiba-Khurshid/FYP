@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project/models/notification_model.dart';
 
 import 'package:project/core/utils/app_constants.dart';
-/// A custom, UI-friendly exception thrown by [NotificationService].
+
 class NotificationException implements Exception {
   final String message;
   const NotificationException(this.message);
@@ -14,16 +14,7 @@ class NotificationException implements Exception {
   String toString() => message;
 }
 
-/// Encapsulates all Cloud Firestore logic for the Notification module.
-///
-/// This is the ONLY class in the app allowed to talk directly to the
-/// `notifications` Firestore collection. Besides serving the
-/// Notifications screen (via [NotificationViewModel]), other services
-/// (`ComplaintService`, `MaintenanceService`) hold a read/write instance
-/// of this class purely to call [notify] whenever a triggering event
-/// happens (complaint submitted/updated/resolved/escalated, maintenance
-/// created/completed) — they never touch Firestore's `notifications`
-/// collection directly.
+
 class NotificationService {
   final FirebaseFirestore _firestore;
 
@@ -69,13 +60,6 @@ class NotificationService {
     }
   }
 
-  // -----------------------------------------------------------------
-  // Read (stream)
-  // -----------------------------------------------------------------
-
-  /// Streams every notification visible to a user: those addressed
-  /// directly to [uid], merged with broadcast notifications addressed
-  /// to their [role], newest first.
   Stream<List<NotificationModel>> streamNotifications({required String uid, required String role}) {
     final personalStream = _notificationsRef
         .where('userId', isEqualTo: uid)

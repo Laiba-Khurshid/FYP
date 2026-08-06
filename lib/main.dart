@@ -16,6 +16,7 @@ import 'package:project/services/maintenance_service.dart';
 import 'package:project/services/notification_service.dart';
 import 'package:project/services/profile_service.dart';
 import 'package:project/services/report_service.dart';
+import 'package:project/services/user_service.dart';
 
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
@@ -30,27 +31,19 @@ import 'package:project/viewmodels/notification_viewmodel.dart';
 import 'package:project/viewmodels/profile_viewmodel.dart';
 import 'package:project/viewmodels/report_viewmodel.dart';
 import 'package:project/viewmodels/theme_viewmodel.dart';
+import 'package:project/viewmodels/user_viewmodel.dart';
 
 import 'package:project/views/common/error_screen.dart';
 import 'package:project/views/common/loading_screen.dart';
 
-/// Entry point of the AssetFlow application.
-///
-/// Responsible for:
-/// - Ensuring Flutter bindings are initialized before any async work.
-/// - Initializing Firebase using the platform-specific options.
-/// - Bootstrapping the app's [MultiProvider] tree (empty for now; state
-///   management providers for auth, assets, complaints, etc. will be
-///   registered here as each module is implemented).
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   runApp(const AssetFlowBootstrap());
 }
 
-/// Handles asynchronous Firebase initialization and shows a loading or
-/// error screen while that initialization is in progress, before
-/// mounting the real [AssetFlowApp].
+
 class AssetFlowBootstrap extends StatefulWidget {
   const AssetFlowBootstrap({super.key});
 
@@ -108,9 +101,6 @@ class _AssetFlowBootstrapState extends State<AssetFlowBootstrap> {
   }
 }
 
-/// The root widget of AssetFlow once Firebase has initialized
-/// successfully. Configures the [MultiProvider] tree, MD3 theming, and
-/// named-route based navigation.
 class AssetFlowApp extends StatelessWidget {
   const AssetFlowApp({super.key});
 
@@ -118,38 +108,96 @@ class AssetFlowApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // ============================================================
+        // SERVICES
+        // ============================================================
+        Provider<AuthService>(
+          create: (_) => AuthService(),
+        ),
+        Provider<AssetService>(
+          create: (_) => AssetService(),
+        ),
+        Provider<ComplaintService>(
+          create: (_) => ComplaintService(),
+        ),
+        Provider<MaintenanceService>(
+          create: (_) => MaintenanceService(),
+        ),
+        Provider<NotificationService>(
+          create: (_) => NotificationService(),
+        ),
+        Provider<ProfileService>(
+          create: (_) => ProfileService(),
+        ),
+        Provider<ReportService>(
+          create: (_) => ReportService(),
+        ),
+        Provider<UserService>(
+          create: (_) => UserService(),
+        ),
+        Provider<AdminToolsService>(
+          create: (_) => AdminToolsService(),
+        ),
+        Provider<AuditService>(
+          create: (_) => AuditService(),
+        ),
+
+        // ============================================================
+        // VIEWMODELS
+        // ============================================================
+        ChangeNotifierProvider<ThemeViewModel>(
+          create: (_) => ThemeViewModel()..loadThemeMode(),
+        ),
         ChangeNotifierProvider<AuthViewModel>(
-          create: (_) => AuthViewModel(authService: AuthService()),
+          create: (context) => AuthViewModel(
+            authService: context.read<AuthService>(),
+          ),
         ),
         ChangeNotifierProvider<AssetViewModel>(
-          create: (_) => AssetViewModel(assetService: AssetService()),
+          create: (context) => AssetViewModel(
+            assetService: context.read<AssetService>(),
+          ),
         ),
         ChangeNotifierProvider<ComplaintViewModel>(
-          create: (_) => ComplaintViewModel(complaintService: ComplaintService()),
+          create: (context) => ComplaintViewModel(
+            complaintService: context.read<ComplaintService>(),
+          ),
         ),
         ChangeNotifierProvider<MaintenanceViewModel>(
-          create: (_) => MaintenanceViewModel(
-            maintenanceService: MaintenanceService(),
-            complaintService: ComplaintService(),
+          create: (context) => MaintenanceViewModel(
+            maintenanceService: context.read<MaintenanceService>(),
+            complaintService: context.read<ComplaintService>(),
           ),
         ),
         ChangeNotifierProvider<NotificationViewModel>(
-          create: (_) => NotificationViewModel(notificationService: NotificationService()),
+          create: (context) => NotificationViewModel(
+            notificationService: context.read<NotificationService>(),
+          ),
         ),
         ChangeNotifierProvider<ReportViewModel>(
-          create: (_) => ReportViewModel(reportService: ReportService()),
+          create: (context) => ReportViewModel(
+            reportService: context.read<ReportService>(),
+          ),
         ),
         ChangeNotifierProvider<ProfileViewModel>(
-          create: (_) => ProfileViewModel(profileService: ProfileService()),
+          create: (context) => ProfileViewModel(
+            profileService: context.read<ProfileService>(),
+          ),
+        ),
+        ChangeNotifierProvider<UserViewModel>(
+          create: (context) => UserViewModel(
+            userService: context.read<UserService>(),
+          ),
         ),
         ChangeNotifierProvider<AuditViewModel>(
-          create: (_) => AuditViewModel(auditService: AuditService()),
+          create: (context) => AuditViewModel(
+            auditService: context.read<AuditService>(),
+          ),
         ),
         ChangeNotifierProvider<AdminToolsViewModel>(
-          create: (_) => AdminToolsViewModel(adminToolsService: AdminToolsService()),
-        ),
-        ChangeNotifierProvider<ThemeViewModel>(
-          create: (_) => ThemeViewModel()..loadThemeMode(),
+          create: (context) => AdminToolsViewModel(
+            adminToolsService: context.read<AdminToolsService>(),
+          ),
         ),
       ],
       child: Consumer<ThemeViewModel>(
@@ -169,7 +217,9 @@ class AssetFlowApp extends StatelessWidget {
   }
 }
 
-/// Builds the light [ThemeData] for AssetFlow using Material Design 3.
+// ================================================================
+// LIGHT THEME
+// ================================================================
 ThemeData _buildLightTheme() {
   final baseTextTheme = GoogleFonts.poppinsTextTheme();
 
@@ -235,16 +285,102 @@ ThemeData _buildLightTheme() {
   );
 }
 
-/// Builds the "dark" [ThemeData] for AssetFlow.
-///
-/// Currently identical to [_buildLightTheme]. The custom widget library
-/// throughout this app (cards, dropdowns, chips, dialogs, etc.) is
-/// built on fixed [AppColors] brand constants rather than
-/// [Theme.of(context).colorScheme], so a genuinely divergent dark theme
-/// would leave Flutter's built-in chrome (Scaffold, AppBar) dark while
-/// every custom surface stayed light-colored — exactly the "black,
-/// unreadable text" bug this was causing. Keeping both themes identical
-/// removes that mismatch entirely (regardless of device system theme or
-/// the in-app Settings selection) until the design system is refactored
-/// to be theme-aware.
-ThemeData _buildDarkTheme() => _buildLightTheme();
+// ================================================================
+// DARK THEME (FULL SCREEN DARK)
+// ================================================================
+ThemeData _buildDarkTheme() {
+  final baseTextTheme = GoogleFonts.poppinsTextTheme();
+
+  // Dark mode colors
+  const darkBackground = Color(0xFF121212);
+  const darkSurface = Color(0xFF1E1E1E);
+  const darkCard = Color(0xFF2C2C2C);
+  const darkText = Colors.white;
+  const darkPrimary = Color(0xFF5C6BC0);
+  const darkSecondary = Color(0xFF4CAF50);
+  const darkError = Color(0xFFEF5350);
+  const darkDivider = Color(0xFF3A3A3A);
+  const darkHint = Color(0xFF888888);
+
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: darkBackground,
+    colorScheme: const ColorScheme.dark(
+      primary: darkPrimary,
+      secondary: darkSecondary,
+      error: darkError,
+      surface: darkSurface,
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      onError: Colors.white,
+      onSurface: darkText,
+      onBackground: darkText,
+      brightness: Brightness.dark,
+    ),
+    textTheme: baseTextTheme.apply(
+      bodyColor: darkText,
+      displayColor: darkText,
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: darkBackground,
+      foregroundColor: darkText,
+      elevation: 0,
+      centerTitle: true,
+      titleTextStyle: GoogleFonts.poppins(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: darkText,
+      ),
+    ),
+    cardTheme: CardThemeData(
+      color: darkCard,
+      elevation: 2,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: darkPrimary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        minimumSize: const Size.fromHeight(AppConstants.buttonHeight),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        ),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: darkCard,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        borderSide: const BorderSide(color: Colors.grey, width: 0.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        borderSide: const BorderSide(color: darkPrimary, width: 1.5),
+      ),
+      labelStyle: const TextStyle(color: darkHint),
+      hintStyle: const TextStyle(color: darkHint),
+    ),
+    dividerTheme: const DividerThemeData(
+      color: darkDivider,
+      thickness: 1,
+    ),
+    fontFamily: GoogleFonts.poppins().fontFamily,
+    listTileTheme: const ListTileThemeData(
+      textColor: darkText,
+      iconColor: darkText,
+    ),
+    iconTheme: const IconThemeData(
+      color: darkText,
+    ),
+  );
+}

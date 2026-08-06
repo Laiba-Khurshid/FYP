@@ -7,12 +7,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A single notification row shown in the Notifications screen.
-///
-/// Shows an icon matching the notification [type], the title/message,
-/// a relative timestamp, and an unread indicator dot. Tapping marks it
-/// read (via [onTap], handled by the screen) and can deep-link to the
-/// related complaint/maintenance record.
+
 class NotificationTile extends StatelessWidget {
   final NotificationModel notification;
   final VoidCallback onTap;

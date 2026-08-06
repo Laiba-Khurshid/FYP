@@ -4,13 +4,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A compact stat card used in the Admin Dashboard's analytics section
-/// (Total Assets, Open Complaints, Maintenance Records, etc.).
-///
-/// Distinct from [SummaryCard] (the Phase 3 dashboard-overview grid
-/// card): this one is denser and horizontally laid out, built for
-/// packing many live analytics numbers into a compact grid alongside
-/// charts.
+
 class DashboardStatCard extends StatelessWidget {
   final IconData icon;
   final String label;

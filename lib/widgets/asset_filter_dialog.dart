@@ -7,7 +7,7 @@ import 'package:project/core/utils/constants.dart';
 
 import 'package:project/widgets/custom_button.dart';
 
-/// The result returned by [AssetFilterDialog] when the user taps Apply.
+
 class AssetFilterResult {
   final String? category;
   final String? lab;
@@ -15,11 +15,7 @@ class AssetFilterResult {
   const AssetFilterResult({this.category, this.lab});
 }
 
-/// A reusable bottom-sheet dialog for filtering the asset list by
-/// category and lab.
-///
-/// Shown via [AssetFilterDialog.show], which returns the user's
-/// selection (or `null` if dismissed without applying).
+
 class AssetFilterDialog extends StatefulWidget {
   final String? initialCategory;
   final String? initialLab;

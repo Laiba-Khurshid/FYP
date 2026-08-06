@@ -9,11 +9,7 @@ import 'package:project/core/utils/app_constants.dart';
 import 'package:project/services/audit_service.dart';
 import 'package:project/services/complaint_service.dart';
 import 'package:project/services/notification_service.dart';
-/// A custom, UI-friendly exception thrown by [MaintenanceService].
-///
-/// Wraps any underlying Firestore failure into a single human-readable
-/// [message] so the ViewModel/UI layer never has to interpret Firebase
-/// error codes directly.
+
 class MaintenanceException implements Exception {
   final String message;
   const MaintenanceException(this.message);
@@ -22,27 +18,7 @@ class MaintenanceException implements Exception {
   String toString() => message;
 }
 
-/// Encapsulates all Cloud Firestore logic for the Maintenance
-/// Management module.
-///
-/// This is the ONLY class in the app allowed to talk directly to the
-/// existing `maintenance` Firestore collection. The UI layer never
-/// touches Firebase directly — it goes through [MaintenanceViewModel],
-/// which in turn calls this service, keeping the project's MVVM
-/// separation intact.
-///
-/// Maintenance records don't carry their own escalation/ownership
-/// fields, so role-based visibility beyond Admin/HOD (Vice Principal,
-/// Principal, Teacher, Student) is resolved by [MaintenanceViewModel]
-/// against the set of complaint IDs that role is already allowed to see
-/// (via the existing, untouched `ComplaintService`), then passed here
-/// as [streamMaintenanceForComplaintIds].
-///
-/// Also holds a [ComplaintService] (read-only, to look up which user
-/// reported the related complaint), a [NotificationService], and an
-/// [AuditService], so that creating a record or marking one Completed
-/// automatically notifies that reporter and writes an audit log entry —
-/// the module's only integration points with those two modules.
+
 class MaintenanceService {
   final FirebaseFirestore _firestore;
   final ComplaintService _complaintService;
@@ -75,13 +51,7 @@ class MaintenanceService {
         .map((snapshot) => snapshot.docs.map(MaintenanceModel.fromDocument).toList());
   }
 
-  /// Streams maintenance records whose [complaintId] is one of
-  /// [allowedComplaintIds] — used for Vice Principal, Principal,
-  /// Teacher, and Student, whose visibility is scoped to a subset of
-  /// complaints. Returns an empty stream if [allowedComplaintIds] is
-  /// empty (Firestore's `whereIn` disallows an empty list). Firestore's
-  /// `whereIn` also caps at 30 values per query, so the list is chunked
-  /// and the results merged.
+
   Stream<List<MaintenanceModel>> streamMaintenanceForComplaintIds(List<String> allowedComplaintIds) {
     if (allowedComplaintIds.isEmpty) {
       return Stream.value(const []);
@@ -93,11 +63,7 @@ class MaintenanceService {
       chunks.add(allowedComplaintIds.sublist(i, end));
     }
 
-    // `whereIn` combined with `orderBy` on a different field requires a
-    // composite index in Firestore. To avoid depending on a manually
-    // created index (and to avoid surfacing a raw `failed-precondition`
-    // exception if it's missing), sort by `createdAt` client-side
-    // instead — this applies whether there's one chunk or several.
+
     if (chunks.length == 1) {
       return _maintenanceRef.where('complaintId', whereIn: chunks.first).snapshots().map((snapshot) {
         final records = snapshot.docs.map(MaintenanceModel.fromDocument).toList();
@@ -106,8 +72,7 @@ class MaintenanceService {
       });
     }
 
-    // For more than 30 allowed complaints, merge multiple live streams
-    // and sort client-side.
+
     final streams = chunks.map(
           (chunk) => _maintenanceRef
           .where('complaintId', whereIn: chunk)

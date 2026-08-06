@@ -6,11 +6,7 @@ import 'package:flutter/material.dart';
 import '../models/audit_log_model.dart';
 import '../services/audit_service.dart';
 
-/// The ViewModel for the Audit History module (Admin-only).
-///
-/// Owns all UI-facing state and delegates the Firestore stream to
-/// [AuditService]. Also provides lightweight client-side search/filter
-/// over the most recent 200 entries the service streams.
+
 class AuditViewModel extends ChangeNotifier {
   final AuditService _auditService;
 

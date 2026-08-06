@@ -4,8 +4,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A card representing one generatable report type (Assets, Complaints,
-/// Maintenance, Users) on the Reports screen.
+
 class ReportCard extends StatelessWidget {
   final IconData icon;
   final String title;

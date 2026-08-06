@@ -19,17 +19,7 @@ import 'package:project/widgets/maintenance_filter_bottomsheet.dart';
 
 import 'package:project/widgets/maintenance_filter_bottomsheet.dart';
 
-/// The Maintenance list screen for AssetFlow.
-///
-/// What a user sees here depends entirely on their role — enforced by
-/// [MaintenanceViewModel.subscribe]:
-/// - Admin / HOD: every maintenance record ("Department Maintenance").
-/// - Vice Principal: maintenance tied to escalated complaints.
-/// - Principal: maintenance tied to final-escalation complaints.
-/// - Teacher / Student: maintenance tied only to complaints they filed.
-///
-/// Only Admin can add, edit, or delete records; every other role has
-/// read-only access.
+
 class MaintenanceListScreen extends StatefulWidget {
   const MaintenanceListScreen({super.key});
 

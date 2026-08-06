@@ -13,12 +13,7 @@ import 'package:project/viewmodels/maintenance_viewmodel.dart';
 
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
-/// The Edit Maintenance screen for AssetFlow.
-///
-/// Admin-only: lets the technician, type, status, remarks, cost, and
-/// maintenance date be updated. Setting the status to Completed
-/// automatically records today as the completed date if one isn't
-/// already set (handled by `MaintenanceService`).
+
 class EditMaintenanceScreen extends StatefulWidget {
   final MaintenanceModel record;
 

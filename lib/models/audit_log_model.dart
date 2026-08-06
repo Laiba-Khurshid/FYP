@@ -1,12 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-/// Represents a single audit log entry as stored in the `audit_logs`
-/// Firestore collection.
-///
-/// Audit logs are an append-only record of important system activity
-/// (assets, complaints, maintenance, and profile changes) — created
-/// automatically by [AuditService] on behalf of the module that
-/// triggered the action, never edited or deleted by users.
 class AuditLogModel {
   final String logId;
   final String userId;
@@ -56,11 +48,6 @@ class AuditLogModel {
     if (value is DateTime) return value;
     return DateTime.now();
   }
-
-  /// Converts this [AuditLogModel] into a Firestore-writable map.
-  ///
-  /// [logId] is intentionally excluded since it is used as the document
-  /// ID rather than stored as a field.
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,

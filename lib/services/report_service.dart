@@ -8,7 +8,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:project/models/report_model.dart';
 
 import 'package:project/core/utils/app_constants.dart';
-/// A custom, UI-friendly exception thrown by [ReportService].
+
 class ReportException implements Exception {
   final String message;
   const ReportException(this.message);
@@ -17,14 +17,7 @@ class ReportException implements Exception {
   String toString() => message;
 }
 
-/// Encapsulates all report-generation logic for AssetFlow.
-///
-/// Reports are never stored — this service reads a one-time snapshot of
-/// the existing `assets`, `complaints`, `maintenance`, and `users`
-/// collections, aggregates them into a [ReportModel], and (optionally)
-/// renders that model into a downloadable/shareable PDF using the `pdf`
-/// package. No UI code lives here, and no other service's collection
-/// structure is modified — this is purely a read-only aggregator.
+
 class ReportService {
   final FirebaseFirestore _firestore;
 

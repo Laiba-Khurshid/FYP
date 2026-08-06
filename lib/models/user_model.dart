@@ -1,12 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Represents an AssetFlow user as stored in the `users` Firestore
-/// collection and mirrored locally after authentication.
-///
-/// Used across the authentication module and, later, by the profile,
-/// dashboard, and complaint modules wherever the identity of the
-/// currently signed-in user (or another user, e.g. an assignee) is
-/// needed.
 class UserModel {
   final String uid;
   final String fullName;

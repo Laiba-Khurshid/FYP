@@ -8,11 +8,7 @@ import 'package:project/core/utils/validators.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/widgets/custom_button.dart';
 import 'package:project/widgets/custom_textfield.dart';
-/// The Forgot Password screen for AssetFlow.
-///
-/// Lets the user enter their email and requests a Firebase password
-/// reset email via [AuthViewModel.forgotPassword]. Shows a confirmation
-/// state once the email has been sent successfully.
+
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 

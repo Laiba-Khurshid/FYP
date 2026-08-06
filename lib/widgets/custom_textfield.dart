@@ -4,12 +4,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-/// A reusable, themeable text field used across the entire AssetFlow app.
-///
-/// Wraps [TextFormField] with consistent styling, optional obscure-text
-/// toggling (for passwords), leading/trailing icons, and validation
-/// support so forms across auth, complaints, assets, etc. stay visually
-/// consistent.
+
 class CustomTextField extends StatefulWidget {
   final String label;
   final String? hint;

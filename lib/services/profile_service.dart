@@ -1,8 +1,8 @@
 import 'dart:typed_data';
+import 'package:image/image.dart' as img;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image/image.dart' as img;
 
 import 'package:project/models/user_model.dart';
 import 'package:project/core/utils/app_constants.dart';
@@ -59,9 +59,10 @@ class ProfileService {
     try {
       String? profileImage = existing.profileImage;
 
-      // Handle image upload/removal
       if (newProfileImage != null) {
-        // Compress image before upload
+        // ============================================================
+        // IMAGE COMPRESS KAREIN (SIZE KAM KAREIN)
+        // ============================================================
         final compressedImage = await _compressImage(newProfileImage);
         profileImage = await _uploadProfileImage(compressedImage, existing.uid);
       } else if (removeProfileImage) {
@@ -99,7 +100,10 @@ class ProfileService {
     }
   }
 
-  /// Upload profile image to Firebase Storage
+  // ============================================================
+  // IMAGE UPLOAD WITH COMPRESSION
+  // ============================================================
+
   Future<String> _uploadProfileImage(Uint8List imageBytes, String uid) async {
     try {
       final ref = _storage.ref().child('profile_images').child('$uid.jpg');
@@ -119,14 +123,15 @@ class ProfileService {
   /// Compress image to reduce upload time (from ~2-3MB to ~200-300KB)
   Future<Uint8List> _compressImage(Uint8List bytes) async {
     try {
+      // Decode image
       final image = img.decodeImage(bytes);
       if (image == null) return bytes;
 
-      // Resize to max 500px (maintain aspect ratio)
+      // Resize to max 400px (maintain aspect ratio)
       final resized = img.copyResize(
         image,
-        width: 500,
-        height: 500,
+        width: 400,
+        height: 400,
         interpolation: img.Interpolation.average,
       );
 

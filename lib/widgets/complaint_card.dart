@@ -7,10 +7,7 @@ import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 import 'package:project/widgets/complaint_status_chip.dart';
 
-/// A single complaint's card in the Complaints list.
-///
-/// Shows the asset/lab identity, a short description preview, and the
-/// status/priority chips. Tapping opens complaint details.
+
 class ComplaintCard extends StatelessWidget {
   final ComplaintModel complaint;
   final VoidCallback onTap;

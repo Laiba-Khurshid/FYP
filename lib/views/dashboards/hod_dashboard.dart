@@ -14,14 +14,7 @@ import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
 import 'package:project/widgets/quick_action_card.dart';
 import 'package:project/widgets/summary_card.dart';
-/// The HOD (Head of Department) Dashboard for AssetFlow.
-///
-/// Gives the HOD an at-a-glance view of department assets, pending and
-/// escalated complaints, and maintenance requests, plus quick access to
-/// the modules an HOD oversees. Statistics shown here are placeholders —
-/// this phase only prepares the dashboard shell; real counts will be
-/// streamed from Firestore once the Assets and Complaints modules are
-/// implemented.
+
 class HodDashboard extends StatefulWidget {
   const HodDashboard({super.key});
 

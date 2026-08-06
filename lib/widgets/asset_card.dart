@@ -6,12 +6,7 @@ import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 import 'package:project/core/utils/constants.dart';
 
-/// A single asset shown in the Assets screen's grid/list.
-///
-/// Displays asset name, category, lab, and quantity. No image shown
-/// to keep the UI clean and fast. When [showActions] is `true`
-/// (Admin/HOD), a popup menu offers Edit/Delete in addition to tapping
-/// the card for details.
+
 class AssetCard extends StatelessWidget {
   final AssetModel asset;
   final VoidCallback onTap;

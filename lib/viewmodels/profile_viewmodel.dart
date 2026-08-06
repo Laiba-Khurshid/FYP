@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/profile_service.dart';
 
-/// The ViewModel for the Profile Management module.
+
 class ProfileViewModel extends ChangeNotifier {
   final ProfileService _profileService;
 
@@ -44,8 +44,7 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }
 
-  /// Updates the current profile. Returns the updated [UserModel] on
-  /// success; returns `null` on failure with [errorMessage] populated.
+
   Future<UserModel?> updateProfile({
     required String fullName,
     String? phoneNumber,

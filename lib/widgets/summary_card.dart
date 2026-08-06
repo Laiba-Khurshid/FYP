@@ -3,15 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
-/// A compact statistics card used in dashboard "at a glance" grids
-/// (e.g. Total Assets, Pending Complaints, Maintenance Requests).
-///
-/// Displays a large [count] alongside an [icon] and [title], with an
-/// optional [subtitle] for extra context (e.g. "+3 this week") and an
-/// optional [onTap] so the card can act as a shortcut into the relevant
-/// module once it exists. [accentColor] tints the icon badge so
-/// different metrics can be visually distinguished (e.g. red for
-/// escalated complaints, green for resolved).
+
 class SummaryCard extends StatelessWidget {
   final IconData icon;
   final String title;

@@ -13,17 +13,6 @@ import 'package:project/core/utils/validators.dart';
 
 import 'package:project/widgets/custom_textfield.dart';
 
-/// The shared set of form fields used by both the Add Asset and Edit
-/// Asset screens: Asset Name, Category, Lab, Quantity, Purchase Date,
-/// Location, and Image.
-///
-/// State (controllers, selected values, the picked image) is owned by
-/// the calling screen — this widget is purely presentational, keeping
-/// all Firestore/Storage logic out of the UI layer per the project's
-/// MVVM architecture. In edit mode ([isEditMode]), Category and Lab are
-/// shown as read-only, since they determine the Asset Code prefix and
-/// `asset_items` subcollection scoping established when the asset was
-/// created.
 class AssetForm extends StatelessWidget {
   final TextEditingController assetNameController;
   final TextEditingController quantityController;

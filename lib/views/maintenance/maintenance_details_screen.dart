@@ -14,12 +14,7 @@ import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/viewmodels/maintenance_viewmodel.dart';
 
 import 'package:project/widgets/maintenance_status_chip.dart';
-/// The Maintenance Details screen for AssetFlow.
-///
-/// Shows the full record — asset/lab, technician, type, remarks, cost,
-/// scheduled and completed dates, and which complaint it resolves.
-/// Admin sees Edit and Delete actions in the app bar; every other role
-/// gets a read-only view.
+
 class MaintenanceDetailsScreen extends StatefulWidget {
   final MaintenanceModel record;
 

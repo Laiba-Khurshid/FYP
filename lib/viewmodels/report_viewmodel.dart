@@ -8,12 +8,7 @@ import 'package:project/services/report_service.dart';
 
 import 'package:project/core/utils/app_constants.dart';
 
-/// The ViewModel for the Reports & Dashboard Analytics module.
-///
-/// Owns all UI-facing state and delegates every Firestore aggregation
-/// and PDF-rendering operation to [ReportService]. Screens interact with
-/// this class exclusively through [Provider] / [Consumer] — no Firebase
-/// calls are ever made directly from the UI.
+
 class ReportViewModel extends ChangeNotifier {
   final ReportService _reportService;
 
