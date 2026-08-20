@@ -9,14 +9,6 @@ import 'package:project/core/utils/app_styles.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/widgets/custom_button.dart';
 
-/// The Verify Users screen for AssetFlow (Admin-only).
-///
-/// Two tabs: **Pending** (awaiting Approve/Reject) and **Approved**
-/// (already-active accounts, browsable/searchable for reference). A
-/// search bar filters either tab client-side by name, email, role, or
-/// roll number/employee ID. Only Approved accounts can log in —
-/// enforced by [AuthService.signIn] and [AuthViewModel.tryAutoLogin],
-/// not just here.
 class VerifyUsersScreen extends StatefulWidget {
   const VerifyUsersScreen({super.key});
 
@@ -24,7 +16,8 @@ class VerifyUsersScreen extends StatefulWidget {
   State<VerifyUsersScreen> createState() => _VerifyUsersScreenState();
 }
 
-class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTickerProviderStateMixin {
+class _VerifyUsersScreenState extends State<VerifyUsersScreen>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   String _searchQuery = '';
 
@@ -41,6 +34,12 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // Subscribe to user lists
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AuthViewModel>().subscribeToUsers();
+    });
   }
 
   @override
@@ -61,24 +60,41 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
     }).toList();
   }
 
-  Future<void> _handleApprove(BuildContext context, AuthViewModel viewModel, UserModel user) async {
+  Future<void> _handleApprove(
+      BuildContext context,
+      AuthViewModel viewModel,
+      UserModel user,
+      ) async {
     final success = await viewModel.approveUser(user.uid);
     if (!context.mounted) return;
-    _showSnack(context, success ? '${user.fullName} approved.' : (viewModel.errorMessage ?? 'Could not approve.'), isError: !success);
+    _showSnack(
+      context,
+      success ? '${user.fullName} approved.' : (viewModel.errorMessage ?? 'Could not approve.'),
+      isError: !success,
+    );
   }
 
-  Future<void> _handleReject(BuildContext context, AuthViewModel viewModel, UserModel user) async {
+  Future<void> _handleReject(
+      BuildContext context,
+      AuthViewModel viewModel,
+      UserModel user,
+      ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+        ),
         title: Text('Reject ${user.fullName}?', style: AppStyles.heading4()),
         content: Text(
           'They will not be able to log in. This can be reversed later by an Admin if needed.',
           style: AppStyles.bodyMedium(color: AppColors.textSecondary),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: Text('Cancel', style: AppStyles.bodyMedium())),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text('Cancel', style: AppStyles.bodyMedium()),
+          ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: Text('Reject', style: AppStyles.bodyMedium(color: AppColors.error)),
@@ -91,7 +107,11 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
 
     final success = await viewModel.rejectUser(user.uid);
     if (!context.mounted) return;
-    _showSnack(context, success ? '${user.fullName} rejected.' : (viewModel.errorMessage ?? 'Could not reject.'), isError: !success);
+    _showSnack(
+      context,
+      success ? '${user.fullName} rejected.' : (viewModel.errorMessage ?? 'Could not reject.'),
+      isError: !success,
+    );
   }
 
   void _showSnack(BuildContext context, String message, {bool isError = false}) {
@@ -103,7 +123,9 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
           backgroundColor: isError ? AppColors.error : AppColors.success,
           duration: AppConstants.snackBarDuration,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+          ),
         ),
       );
   }
@@ -151,16 +173,18 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
               child: TabBarView(
                 controller: _tabController,
                 children: [
+                  // PENDING TAB
                   _buildUserList(
-                    stream: authViewModel.streamPendingUsers(),
+                    users: authViewModel.pendingUsers,
                     viewModel: authViewModel,
                     isPendingTab: true,
                     emptyIcon: Icons.verified_user_outlined,
                     emptyTitle: 'No pending registrations',
                     emptyMessage: 'New signups awaiting approval will show up here.',
                   ),
+                  // APPROVED TAB
                   _buildUserList(
-                    stream: authViewModel.streamApprovedUsers(),
+                    users: authViewModel.approvedUsers,
                     viewModel: authViewModel,
                     isPendingTab: false,
                     emptyIcon: Icons.people_outline_rounded,
@@ -198,65 +222,63 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
   }
 
   Widget _buildUserList({
-    required Stream<List<UserModel>> stream,
+    required List<UserModel> users,
     required AuthViewModel viewModel,
     required bool isPendingTab,
     required IconData emptyIcon,
     required String emptyTitle,
     required String emptyMessage,
   }) {
-    return StreamBuilder<List<UserModel>>(
-      stream: stream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-        }
-        if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              'Could not load users.',
-              style: AppStyles.bodyMedium(color: AppColors.textSecondary),
-            ),
-          );
-        }
+    final filteredUsers = _filter(users);
 
-        final users = _filter(snapshot.data ?? []);
-        if (users.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppConstants.paddingLarge),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(emptyIcon, size: 56, color: AppColors.textHint),
-                  const SizedBox(height: AppConstants.paddingMedium),
-                  Text(
-                    _searchQuery.isNotEmpty ? 'No matching users' : emptyTitle,
-                    style: AppStyles.heading4(),
-                  ),
-                  const SizedBox(height: AppConstants.paddingSmall),
-                  Text(
-                    _searchQuery.isNotEmpty ? 'Try a different search term.' : emptyMessage,
-                    style: AppStyles.bodyMedium(color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
+    if (viewModel.isLoading && filteredUsers.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
 
-        return ListView.separated(
+    if (filteredUsers.isEmpty) {
+      return Center(
+        child: Padding(
           padding: const EdgeInsets.all(AppConstants.paddingLarge),
-          itemCount: users.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AppConstants.paddingMedium),
-          itemBuilder: (context, index) => _buildUserCard(context, viewModel, users[index], isPendingTab),
-        );
-      },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(emptyIcon, size: 56, color: AppColors.textHint),
+              const SizedBox(height: AppConstants.paddingMedium),
+              Text(
+                _searchQuery.isNotEmpty ? 'No matching users' : emptyTitle,
+                style: AppStyles.heading4(),
+              ),
+              const SizedBox(height: AppConstants.paddingSmall),
+              Text(
+                _searchQuery.isNotEmpty
+                    ? 'Try a different search term.'
+                    : emptyMessage,
+                style: AppStyles.bodyMedium(color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppConstants.paddingLarge),
+      itemCount: filteredUsers.length,
+      separatorBuilder: (_, __) => const SizedBox(height: AppConstants.paddingMedium),
+      itemBuilder: (context, index) =>
+          _buildUserCard(context, viewModel, filteredUsers[index], isPendingTab),
     );
   }
 
-  Widget _buildUserCard(BuildContext context, AuthViewModel viewModel, UserModel user, bool isPendingTab) {
+  Widget _buildUserCard(
+      BuildContext context,
+      AuthViewModel viewModel,
+      UserModel user,
+      bool isPendingTab,
+      ) {
     final isStudent = user.isStudent;
     final identifier = isStudent ? user.rollNumber : user.employeeId;
     final statusColor = isPendingTab ? AppColors.statusPending : AppColors.success;
@@ -275,7 +297,7 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
             children: [
               CircleAvatar(
                 radius: 22,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1), // FIXED
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 child: Text(
                   user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
                   style: AppStyles.heading4(color: AppColors.primary),
@@ -286,19 +308,28 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user.fullName, style: AppStyles.bodyLarge().copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      user.fullName,
+                      style: AppStyles.bodyLarge().copyWith(fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(height: 2),
-                    Text(user.email, style: AppStyles.bodySmall(color: AppColors.textSecondary)),
+                    Text(
+                      user.email,
+                      style: AppStyles.bodySmall(color: AppColors.textSecondary),
+                    ),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1), // FIXED
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
                 ),
-                child: Text(_roleLabels[user.role] ?? user.role, style: AppStyles.caption(color: statusColor)),
+                child: Text(
+                  _roleLabels[user.role] ?? user.role,
+                  style: AppStyles.caption(color: statusColor),
+                ),
               ),
             ],
           ),
@@ -308,8 +339,14 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
             runSpacing: 4,
             children: [
               if (identifier != null && identifier.isNotEmpty)
-                Text('${isStudent ? 'Roll #' : 'Emp. ID'}: $identifier', style: AppStyles.caption()),
-              Text('Requested: ${DateFormat('MMM d, y').format(user.createdAt)}', style: AppStyles.caption()),
+                Text(
+                  '${isStudent ? 'Roll #' : 'Emp. ID'}: $identifier',
+                  style: AppStyles.caption(),
+                ),
+              Text(
+                'Requested: ${DateFormat('MMM d, y').format(user.createdAt)}',
+                style: AppStyles.caption(),
+              ),
             ],
           ),
           if (isPendingTab) ...[
@@ -338,11 +375,11 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
     );
   }
 
-  Future<void> _showAddAuthorizedUserDialog(BuildContext context, AuthViewModel viewModel) async {
+  Future<void> _showAddAuthorizedUserDialog(
+      BuildContext context,
+      AuthViewModel viewModel,
+      ) async {
     final identifierController = TextEditingController();
-    // Only Student and Teacher registrations are gated by the
-    // authenticated_users allow-list — HOD/VP/Principal/Admin never
-    // need a pre-authorization entry.
     String selectedRole = AppConstants.roleStudent;
     const eligibleRoles = [AppConstants.roleStudent, AppConstants.roleTeacher];
 
@@ -352,7 +389,9 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
         builder: (dialogContext, setDialogState) {
           final isStudent = selectedRole == AppConstants.roleStudent;
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+            ),
             title: Text('Add Authorized User', style: AppStyles.heading4()),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -364,7 +403,12 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
                   value: selectedRole,
                   isExpanded: true,
                   items: eligibleRoles
-                      .map((role) => DropdownMenuItem<String>(value: role, child: Text(_roleLabels[role] ?? role)))
+                      .map(
+                        (role) => DropdownMenuItem<String>(
+                      value: role,
+                      child: Text(_roleLabels[role] ?? role),
+                    ),
+                  )
                       .toList(),
                   onChanged: (value) {
                     if (value != null) setDialogState(() => selectedRole = value);
@@ -398,7 +442,9 @@ class _VerifyUsersScreenState extends State<VerifyUsersScreen> with SingleTicker
                   if (!context.mounted) return;
                   _showSnack(
                     context,
-                    success ? 'Authorized user added.' : (viewModel.errorMessage ?? 'Could not add authorized user.'),
+                    success
+                        ? 'Authorized user added.'
+                        : (viewModel.errorMessage ?? 'Could not add authorized user.'),
                     isError: !success,
                   );
                 },

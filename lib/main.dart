@@ -78,13 +78,11 @@ class _AssetFlowBootstrapState extends State<AssetFlowBootstrap> {
       debugShowCheckedModeBanner: false,
       title: AppConstants.appName,
       theme: _buildLightTheme(),
-      darkTheme: _buildDarkTheme(),
-      themeMode: ThemeMode.system,
       home: FutureBuilder<FirebaseApp>(
         future: _initialization,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const LoadingScreen(message: 'Starting AssetFlow...');
+            return const LoadingScreen(message: 'Starting CS AssetFlow');  // ✅ CHANGE
           }
           if (snapshot.hasError) {
             return ErrorScreen(
@@ -200,25 +198,19 @@ class AssetFlowApp extends StatelessWidget {
           ),
         ),
       ],
-      child: Consumer<ThemeViewModel>(
-        builder: (context, themeViewModel, _) {
-          return MaterialApp(
-            title: AppConstants.appName,
-            debugShowCheckedModeBanner: false,
-            theme: _buildLightTheme(),
-            darkTheme: _buildDarkTheme(),
-            themeMode: themeViewModel.themeMode,
-            initialRoute: AppRoutes.splash,
-            onGenerateRoute: AppRoutes.generateRoute,
-          );
-        },
+      child: MaterialApp(
+        title: AppConstants.appName,
+        debugShowCheckedModeBanner: false,
+        theme: _buildLightTheme(),
+        initialRoute: AppRoutes.splash,
+        onGenerateRoute: AppRoutes.generateRoute,
       ),
     );
   }
 }
 
 // ================================================================
-// LIGHT THEME
+// LIGHT THEME (SIRF YAHI USE HOGA)
 // ================================================================
 ThemeData _buildLightTheme() {
   final baseTextTheme = GoogleFonts.poppinsTextTheme();
@@ -282,105 +274,5 @@ ThemeData _buildLightTheme() {
       thickness: 1,
     ),
     fontFamily: GoogleFonts.poppins().fontFamily,
-  );
-}
-
-// ================================================================
-// DARK THEME (FULL SCREEN DARK)
-// ================================================================
-ThemeData _buildDarkTheme() {
-  final baseTextTheme = GoogleFonts.poppinsTextTheme();
-
-  // Dark mode colors
-  const darkBackground = Color(0xFF121212);
-  const darkSurface = Color(0xFF1E1E1E);
-  const darkCard = Color(0xFF2C2C2C);
-  const darkText = Colors.white;
-  const darkPrimary = Color(0xFF5C6BC0);
-  const darkSecondary = Color(0xFF4CAF50);
-  const darkError = Color(0xFFEF5350);
-  const darkDivider = Color(0xFF3A3A3A);
-  const darkHint = Color(0xFF888888);
-
-  return ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    scaffoldBackgroundColor: darkBackground,
-    colorScheme: const ColorScheme.dark(
-      primary: darkPrimary,
-      secondary: darkSecondary,
-      error: darkError,
-      surface: darkSurface,
-      onPrimary: Colors.white,
-      onSecondary: Colors.white,
-      onError: Colors.white,
-      onSurface: darkText,
-      onBackground: darkText,
-      brightness: Brightness.dark,
-    ),
-    textTheme: baseTextTheme.apply(
-      bodyColor: darkText,
-      displayColor: darkText,
-    ),
-    appBarTheme: AppBarTheme(
-      backgroundColor: darkBackground,
-      foregroundColor: darkText,
-      elevation: 0,
-      centerTitle: true,
-      titleTextStyle: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: darkText,
-      ),
-    ),
-    cardTheme: CardThemeData(
-      color: darkCard,
-      elevation: 2,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: darkPrimary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        minimumSize: const Size.fromHeight(AppConstants.buttonHeight),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        ),
-      ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: darkCard,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        borderSide: const BorderSide(color: Colors.grey, width: 0.5),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        borderSide: const BorderSide(color: darkPrimary, width: 1.5),
-      ),
-      labelStyle: const TextStyle(color: darkHint),
-      hintStyle: const TextStyle(color: darkHint),
-    ),
-    dividerTheme: const DividerThemeData(
-      color: darkDivider,
-      thickness: 1,
-    ),
-    fontFamily: GoogleFonts.poppins().fontFamily,
-    listTileTheme: const ListTileThemeData(
-      textColor: darkText,
-      iconColor: darkText,
-    ),
-    iconTheme: const IconThemeData(
-      color: darkText,
-    ),
   );
 }

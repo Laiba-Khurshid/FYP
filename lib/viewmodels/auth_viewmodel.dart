@@ -27,12 +27,24 @@ class AuthViewModel extends ChangeNotifier {
   String? _errorMessage;
   bool _rememberMe = true;
 
+  // ================================================================
+  // USER LISTS - FOR VERIFY USERS SCREEN (ADDED)
+  // ================================================================
+  List<UserModel> _pendingUsers = [];
+  List<UserModel> _approvedUsers = [];
+
   AuthStatus get status => _status;
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get rememberMe => _rememberMe;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
+
+  // ================================================================
+  // GETTERS FOR VERIFY USERS SCREEN (ADDED)
+  // ================================================================
+  List<UserModel> get pendingUsers => _pendingUsers;
+  List<UserModel> get approvedUsers => _approvedUsers;
 
   void toggleRememberMe(bool value) {
     _rememberMe = value;
@@ -47,6 +59,33 @@ class AuthViewModel extends ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  // ================================================================
+  // SUBSCRIBE TO USERS - FOR VERIFY USERS SCREEN (ADDED)
+  // ================================================================
+  void subscribeToUsers() {
+    _authService.streamPendingUsers().listen(
+          (users) {
+        _pendingUsers = users;
+        notifyListeners();
+      },
+      onError: (error) {
+        _errorMessage = error.toString();
+        notifyListeners();
+      },
+    );
+
+    _authService.streamApprovedUsers().listen(
+          (users) {
+        _approvedUsers = users;
+        notifyListeners();
+      },
+      onError: (error) {
+        _errorMessage = error.toString();
+        notifyListeners();
+      },
+    );
   }
 
   // -----------------------------------------------------------------
@@ -247,7 +286,7 @@ class AuthViewModel extends ChangeNotifier {
   /// Users screen (Admin-only).
   Stream<List<UserModel>> streamPendingUsers() => _authService.streamPendingUsers();
 
-  /// ✅ FIX: Added this method – streams approved users.
+  /// Streams approved users — used by the Verify Users screen.
   Stream<List<UserModel>> streamApprovedUsers() => _authService.streamApprovedUsers();
 
   Future<bool> approveUser(String uid) async {

@@ -136,18 +136,32 @@ class ComplaintService {
         status: AppConstants.statusPending,
         createdAt: now,
         updatedAt: now,
-        assignedTo: AppConstants.roleHOD,
+        assignedTo: AppConstants.roleAdmin,  // ✅ Asset Manager
         escalationLevel: AppConstants.escalationLevelNone,
         imageUrl: imageUrl,
       );
 
       await docRef.set(complaint.toMap());
 
+      // ============================================================
+      // NOTIFICATION 1: Asset Manager ko
+      // ============================================================
       await _notificationService.notify(
         title: 'New Complaint Filed',
         message: '${complaint.assetName} in ${complaint.labName} has a new complaint.',
         type: AppConstants.notificationTypeComplaintSubmitted,
-        role: AppConstants.roleHOD,
+        role: AppConstants.roleAdmin,
+        relatedId: complaint.complaintId,
+      );
+
+      // ============================================================
+      // NOTIFICATION 2: Student/Reporter ko
+      // ============================================================
+      await _notificationService.notify(
+        title: 'Complaint Submitted Successfully',
+        message: 'Your complaint about ${complaint.assetName} has been submitted and is pending review.',
+        type: AppConstants.notificationTypeComplaintSubmitted,
+        userId: reportedBy,
         relatedId: complaint.complaintId,
       );
 

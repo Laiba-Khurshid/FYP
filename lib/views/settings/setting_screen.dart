@@ -111,7 +111,6 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeViewModel = context.watch<ThemeViewModel>();
     final role = context.watch<AuthViewModel>().currentUser?.role;
     final isAdmin = role == AppConstants.roleAdmin;
 
@@ -138,34 +137,8 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: AppConstants.paddingLarge),
 
             // ============================================================
-            // APPEARANCE SECTION
+            // APPEARANCE SECTION - REMOVED
             // ============================================================
-            Text('Appearance', style: AppStyles.label(color: AppColors.textSecondary)),
-            const SizedBox(height: AppConstants.paddingSmall),
-            _buildThemeOption(
-              context,
-              themeViewModel,
-              ThemeMode.light,
-              Icons.light_mode_outlined,
-              'Light Mode',
-            ),
-            const SizedBox(height: AppConstants.paddingSmall),
-            _buildThemeOption(
-              context,
-              themeViewModel,
-              ThemeMode.dark,
-              Icons.dark_mode_outlined,
-              'Dark Mode',
-            ),
-            const SizedBox(height: AppConstants.paddingSmall),
-            _buildThemeOption(
-              context,
-              themeViewModel,
-              ThemeMode.system,
-              Icons.settings_suggest_outlined,
-              'System Theme',
-            ),
-            const SizedBox(height: AppConstants.paddingLarge),
 
             // ============================================================
             // ABOUT SECTION
@@ -263,31 +236,6 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildThemeOption(
-      BuildContext context,
-      ThemeViewModel viewModel,
-      ThemeMode mode,
-      IconData icon,
-      String label,
-      ) {
-    final isSelected = viewModel.themeMode == mode;
-    return SettingTile(
-      icon: icon,
-      title: label,
-      showChevron: false,
-      iconColor: isSelected ? AppColors.primary : AppColors.textSecondary,
-      trailing: Radio<ThemeMode>(
-        value: mode,
-        groupValue: viewModel.themeMode,
-        activeColor: AppColors.primary,
-        onChanged: (value) {
-          if (value != null) viewModel.setThemeMode(value);
-        },
-      ),
-      onTap: () => viewModel.setThemeMode(mode),
     );
   }
 

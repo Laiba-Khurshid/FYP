@@ -1,7 +1,4 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import 'package:project/core/utils/app_colors.dart';
@@ -24,8 +21,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
-  Uint8List? _pickedImageBytes;
-  bool _removeImage = false;
   bool _initialized = false;
 
   @override
@@ -45,54 +40,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppConstants.borderRadiusXLarge)),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: AppConstants.paddingLarge),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
-                title: Text('Take a photo', style: AppStyles.bodyMedium()),
-                onTap: () => Navigator.of(context).pop(ImageSource.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
-                title: Text('Choose from gallery', style: AppStyles.bodyMedium()),
-                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (source == null) return;
-
-    // Reduced quality and size for faster upload
-    final picked = await ImagePicker().pickImage(
-      source: source,
-      imageQuality: 50,    // 80 se 50 kiya (faster upload)
-      maxWidth: 600,       // 1000 se 600 kiya (faster upload)
-    );
-
-    if (picked != null) {
-      final bytes = await picked.readAsBytes();
-      setState(() {
-        _pickedImageBytes = bytes;
-        _removeImage = false;
-      });
-    }
-  }
-
   Future<void> _handleSave(ProfileViewModel viewModel) async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
@@ -100,14 +47,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final updated = await viewModel.updateProfile(
       fullName: _nameController.text,
       phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text,
-      newProfileImage: _pickedImageBytes,
-      removeProfileImage: _removeImage,
     );
 
     if (!mounted) return;
 
     if (updated != null) {
-      // Success - pop immediately
       Navigator.of(context).pop();
       _showSnack('Profile updated successfully.');
     } else {
@@ -152,8 +96,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(child: _buildAvatarPicker(profile)),
-                const SizedBox(height: AppConstants.paddingXLarge),
+                // ============================================================
+                // SIRF NAME, PHONE, EMAIL, DEPARTMENT - KOI AVATAR NAHI
+                // ============================================================
                 CustomTextField(
                   label: 'Full Name',
                   controller: _nameController,
@@ -204,45 +149,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildAvatarPicker(dynamic profile) {
-    ImageProvider? backgroundImage;
-    if (_pickedImageBytes != null) {
-      backgroundImage = MemoryImage(_pickedImageBytes!);
-    } else if (!_removeImage && profile.profileImage != null && (profile.profileImage as String).isNotEmpty) {
-      backgroundImage = NetworkImage(profile.profileImage as String);
-    }
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        CircleAvatar(
-          radius: 48,
-          backgroundColor: AppColors.primary.withOpacity(0.1),
-          backgroundImage: backgroundImage,
-          child: backgroundImage == null
-              ? Icon(Icons.person_rounded, size: 44, color: AppColors.primary)
-              : null,
-        ),
-        Positioned(
-          bottom: -2,
-          right: -2,
-          child: Material(
-            color: AppColors.primary,
-            shape: const CircleBorder(),
-            child: InkWell(
-              onTap: _pickImage,
-              customBorder: const CircleBorder(),
-              child: const Padding(
-                padding: EdgeInsets.all(7),
-                child: Icon(Icons.camera_alt_rounded, size: 16, color: AppColors.textOnPrimary),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

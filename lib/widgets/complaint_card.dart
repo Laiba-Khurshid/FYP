@@ -21,6 +21,12 @@ class ComplaintCard extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        side: BorderSide(color: const Color(0xFFEEEEEE), width: 1),
+      ),
+      elevation: 1,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -35,10 +41,10 @@ class ComplaintCard extends StatelessWidget {
                     height: 44,
                     width: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: const Color(0xFF1A237E).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
                     ),
-                    child: const Icon(Icons.report_problem_rounded, color: AppColors.primary, size: 22),
+                    child: const Icon(Icons.report_problem_rounded, color: Color(0xFF1A237E), size: 22),
                   ),
                   const SizedBox(width: AppConstants.paddingMedium),
                   Expanded(
@@ -49,19 +55,23 @@ class ComplaintCard extends StatelessWidget {
                           complaint.assetCode != null && complaint.assetCode!.isNotEmpty
                               ? '${complaint.assetName} • ${complaint.assetCode}'
                               : complaint.assetName,
-                          style: AppStyles.heading4(),
+                          style: AppStyles.heading4().copyWith(
+                            color: Colors.black,  // ✅ Black text
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            const Icon(Icons.meeting_room_outlined, size: 13, color: AppColors.textSecondary),
+                            const Icon(Icons.meeting_room_outlined, size: 13, color: Color(0xFF666666)),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 complaint.labName,
-                                style: AppStyles.bodySmall(),
+                                style: AppStyles.bodySmall().copyWith(
+                                  color: const Color(0xFF666666),  // ✅ Dark gray
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -77,7 +87,9 @@ class ComplaintCard extends StatelessWidget {
               const SizedBox(height: AppConstants.paddingSmall),
               Text(
                 complaint.description,
-                style: AppStyles.bodySmall(color: AppColors.textSecondary),
+                style: AppStyles.bodySmall().copyWith(
+                  color: const Color(0xFF444444),  // ✅ Dark gray
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -86,9 +98,14 @@ class ComplaintCard extends StatelessWidget {
                 children: [
                   ComplaintStatusChip(status: complaint.status),
                   const Spacer(),
-                  Icon(Icons.calendar_today_rounded, size: 12, color: AppColors.textHint),
+                  Icon(Icons.calendar_today_rounded, size: 12, color: const Color(0xFF999999)),
                   const SizedBox(width: 4),
-                  Text(dateLabel, style: AppStyles.caption()),
+                  Text(
+                    dateLabel,
+                    style: AppStyles.caption().copyWith(
+                      color: const Color(0xFF999999),  // ✅ Light gray
+                    ),
+                  ),
                 ],
               ),
             ],

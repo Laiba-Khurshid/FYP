@@ -6,6 +6,7 @@ import 'package:project/routes/app_routes.dart';
 import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
+import 'package:project/core/utils/constants.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/viewmodels/complaint_viewmodel.dart';
 import 'package:project/widgets/asset_search_bar.dart';
@@ -77,39 +78,89 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     final user = context.watch<AuthViewModel>().currentUser;
     final role = user?.role ?? AppConstants.roleStudent;
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(title: Text(_titleForRole(role), style: AppStyles.heading4())),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.paddingLarge),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AssetSearchBar(
-                hint: 'Search by ID, asset, code, or lab',
-                hasActiveFilters: complaintViewModel.hasActiveFilters,
-                onChanged: complaintViewModel.search,
-                onFilterTap: () => _openFilterSheet(complaintViewModel),
-              ),
-              if (complaintViewModel.hasActiveFilters) ...[
-                const SizedBox(height: AppConstants.paddingSmall),
-                _buildActiveFilterChips(complaintViewModel),
-              ],
-              const SizedBox(height: AppConstants.paddingMedium),
-              Expanded(child: _buildBody(complaintViewModel)),
-            ],
+    // ================================================================
+    // FORCE LIGHT MODE - Complete screen light mode
+    // ================================================================
+    return Theme(
+      data: ThemeData.light().copyWith(
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF1A237E),
+          secondary: Color(0xFF4CAF50),
+          error: Color(0xFFDC3545),
+          surface: Color(0xFFF8F9FA),
+          onSurface: Colors.black,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.black),
+          bodyMedium: TextStyle(color: Colors.black),
+          bodySmall: TextStyle(color: Color(0xFF666666)),
+        ),
+        cardTheme: CardThemeData(
+          color: Colors.white,
+          elevation: 1,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
           ),
         ),
       ),
-      floatingActionButton: _canCreateComplaint(role)
-          ? FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.addComplaint),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add_rounded, color: AppColors.textOnPrimary),
-        label: Text('New Complaint', style: AppStyles.buttonText()),
-      )
-          : null,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: Text(
+            _titleForRole(role),
+            style: AppStyles.heading4().copyWith(color: Colors.black),
+          ),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppConstants.paddingLarge),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AssetSearchBar(
+                  hint: 'Search by ID, asset, code, or lab',
+                  hasActiveFilters: complaintViewModel.hasActiveFilters,
+                  onChanged: complaintViewModel.search,
+                  onFilterTap: () => _openFilterSheet(complaintViewModel),
+                ),
+                if (complaintViewModel.hasActiveFilters) ...[
+                  const SizedBox(height: AppConstants.paddingSmall),
+                  _buildActiveFilterChips(complaintViewModel),
+                ],
+                const SizedBox(height: AppConstants.paddingMedium),
+                Expanded(child: _buildBody(complaintViewModel)),
+              ],
+            ),
+          ),
+        ),
+        floatingActionButton: _canCreateComplaint(role)
+            ? FloatingActionButton.extended(
+          onPressed: () => Navigator.of(context).pushNamed(AppRoutes.addComplaint),
+          backgroundColor: const Color(0xFF1A237E),
+          icon: const Icon(Icons.add_rounded, color: Colors.white),
+          label: Text(
+            'New Complaint',
+            style: AppStyles.buttonText().copyWith(color: Colors.white),
+          ),
+        )
+            : null,
+      ),
     );
   }
 
@@ -120,9 +171,12 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
       chips.add(Padding(
         padding: const EdgeInsets.only(right: AppConstants.paddingSmall),
         child: Chip(
-          label: Text(value, style: AppStyles.caption(color: AppColors.primary)),
-          backgroundColor: AppColors.primary.withOpacity(0.08),
-          deleteIcon: const Icon(Icons.close_rounded, size: 16, color: AppColors.primary),
+          label: Text(
+            value,
+            style: AppStyles.caption(color: const Color(0xFF1A237E)),
+          ),
+          backgroundColor: const Color(0xFF1A237E).withValues(alpha: 0.08),
+          deleteIcon: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF1A237E)),
           onDeleted: onClear,
           side: BorderSide.none,
         ),
@@ -146,7 +200,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
 
   Widget _buildBody(ComplaintViewModel viewModel) {
     if (viewModel.isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF1A237E)));
     }
 
     if (viewModel.errorMessage != null && viewModel.totalComplaintCount == 0) {
@@ -174,7 +228,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     }
 
     return RefreshIndicator(
-      color: AppColors.primary,
+      color: const Color(0xFF1A237E),
       onRefresh: viewModel.refreshComplaints,
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -205,14 +259,18 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 56, color: AppColors.textHint),
+              Icon(icon, size: 56, color: const Color(0xFFBDBDBD)),
               const SizedBox(height: AppConstants.paddingMedium),
-              Text(title, style: AppStyles.heading4(), textAlign: TextAlign.center),
+              Text(
+                title,
+                style: AppStyles.heading4().copyWith(color: Colors.black),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: AppConstants.paddingSmall),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: AppStyles.bodyMedium(color: AppColors.textSecondary),
+                style: AppStyles.bodyMedium(color: const Color(0xFF666666)),
               ),
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(height: AppConstants.paddingLarge),
@@ -257,101 +315,128 @@ class _ComplaintFilterSheetState extends State<ComplaintFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppConstants.borderRadiusXLarge)),
-        ),
-        padding: EdgeInsets.only(
-          left: AppConstants.paddingLarge,
-          right: AppConstants.paddingLarge,
-          top: AppConstants.paddingLarge,
-          bottom: AppConstants.paddingLarge + MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  height: 4,
-                  width: 40,
-                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)),
-                ),
-              ),
-              const SizedBox(height: AppConstants.paddingLarge),
-              Text('Filter Complaints', style: AppStyles.heading3()),
-              const SizedBox(height: AppConstants.paddingLarge),
-              Text('Status', style: AppStyles.label()),
-              const SizedBox(height: AppConstants.paddingSmall),
-              _buildDropdown(
-                value: _status,
-                hint: 'All Statuses',
-                items: _statusLabels.keys.toList(),
-                labelBuilder: (v) => _statusLabels[v] ?? v,
-                onChanged: (value) => setState(() => _status = value),
-              ),
-              const SizedBox(height: AppConstants.paddingMedium),
-              Text('Priority', style: AppStyles.label()),
-              const SizedBox(height: AppConstants.paddingSmall),
-              _buildDropdown(
-                value: _priority,
-                hint: 'All Priorities',
-                items: AppConstants.complaintPriorities,
-                labelBuilder: (v) => v,
-                onChanged: (value) => setState(() => _priority = value),
-              ),
-              const SizedBox(height: AppConstants.paddingMedium),
-              Text('Lab', style: AppStyles.label()),
-              const SizedBox(height: AppConstants.paddingSmall),
-              _buildDropdown(
-                value: _lab,
-                hint: 'All Labs',
-                items: ['Smart Lab 1', 'Smart Lab 2', 'Smart Lab 3', 'Computer Lab', 'Physics Lab', 'Chemistry Lab'],
-                labelBuilder: (v) => v,
-                onChanged: (value) => setState(() => _lab = value),
-              ),
-              const SizedBox(height: AppConstants.paddingMedium),
-              Text('Category', style: AppStyles.label()),
-              const SizedBox(height: AppConstants.paddingSmall),
-              _buildDropdown(
-                value: _category,
-                hint: 'All Categories',
-                items: ['Computer', 'Laptop', 'Projector', 'Monitor', 'Keyboard', 'Mouse', 'Printer', 'Scanner', 'Other'],
-                labelBuilder: (v) => v,
-                onChanged: (value) => setState(() => _category = value),
-              ),
-              const SizedBox(height: AppConstants.paddingXLarge),
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomButton(
-                      label: 'Clear',
-                      type: CustomButtonType.outline,
-                      onPressed: () {
-                        setState(() {
-                          _status = null;
-                          _priority = null;
-                          _lab = null;
-                          _category = null;
-                        });
-                      },
+    // Force Light Mode for Filter Sheet
+    return Theme(
+      data: ThemeData.light(),
+      child: SafeArea(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppConstants.borderRadiusXLarge)),
+          ),
+          padding: EdgeInsets.only(
+            left: AppConstants.paddingLarge,
+            right: AppConstants.paddingLarge,
+            top: AppConstants.paddingLarge,
+            bottom: AppConstants.paddingLarge + MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    height: 4,
+                    width: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCCCCCC),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  const SizedBox(width: AppConstants.paddingMedium),
-                  Expanded(
-                    child: CustomButton(
-                      label: 'Apply',
-                      onPressed: () => Navigator.of(context).pop(
-                        ComplaintFilterResult(status: _status, priority: _priority, lab: _lab, category: _category),
+                ),
+                const SizedBox(height: AppConstants.paddingLarge),
+                Text(
+                  'Filter Complaints',
+                  style: AppStyles.heading3().copyWith(color: Colors.black),
+                ),
+                const SizedBox(height: AppConstants.paddingLarge),
+                Text(
+                  'Status',
+                  style: AppStyles.label().copyWith(color: const Color(0xFF444444)),
+                ),
+                const SizedBox(height: AppConstants.paddingSmall),
+                _buildDropdown(
+                  value: _status,
+                  hint: 'All Statuses',
+                  items: _statusLabels.keys.toList(),
+                  labelBuilder: (v) => _statusLabels[v] ?? v,
+                  onChanged: (value) => setState(() => _status = value),
+                ),
+                const SizedBox(height: AppConstants.paddingMedium),
+                Text(
+                  'Priority',
+                  style: AppStyles.label().copyWith(color: const Color(0xFF444444)),
+                ),
+                const SizedBox(height: AppConstants.paddingSmall),
+                _buildDropdown(
+                  value: _priority,
+                  hint: 'All Priorities',
+                  items: AppConstants.complaintPriorities,
+                  labelBuilder: (v) => v,
+                  onChanged: (value) => setState(() => _priority = value),
+                ),
+                const SizedBox(height: AppConstants.paddingMedium),
+                Text(
+                  'Lab',
+                  style: AppStyles.label().copyWith(color: const Color(0xFF444444)),
+                ),
+                const SizedBox(height: AppConstants.paddingSmall),
+                _buildDropdown(
+                  value: _lab,
+                  hint: 'All Labs',
+                  items: AssetConstants.labs,
+                  labelBuilder: (v) => v,
+                  onChanged: (value) => setState(() => _lab = value),
+                ),
+                const SizedBox(height: AppConstants.paddingMedium),
+                Text(
+                  'Category',
+                  style: AppStyles.label().copyWith(color: const Color(0xFF444444)),
+                ),
+                const SizedBox(height: AppConstants.paddingSmall),
+                _buildDropdown(
+                  value: _category,
+                  hint: 'All Categories',
+                  items: AssetConstants.allCategories,
+                  labelBuilder: (v) => v,
+                  onChanged: (value) => setState(() => _category = value),
+                ),
+                const SizedBox(height: AppConstants.paddingXLarge),
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        label: 'Clear',
+                        type: CustomButtonType.outline,
+                        onPressed: () {
+                          setState(() {
+                            _status = null;
+                            _priority = null;
+                            _lab = null;
+                            _category = null;
+                          });
+                        },
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: AppConstants.paddingMedium),
+                    Expanded(
+                      child: CustomButton(
+                        label: 'Apply',
+                        onPressed: () => Navigator.of(context).pop(
+                          ComplaintFilterResult(
+                            status: _status,
+                            priority: _priority,
+                            lab: _lab,
+                            category: _category,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -367,21 +452,30 @@ class _ComplaintFilterSheetState extends State<ComplaintFilterSheet> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: const Color(0xFFCCCCCC)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           value: value,
           isExpanded: true,
-          hint: Text(hint, style: AppStyles.bodyMedium(color: AppColors.textHint)),
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
-          style: AppStyles.bodyLarge(),
+          hint: Text(
+            hint,
+            style: AppStyles.bodyMedium(color: const Color(0xFF999999)),
+          ),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF666666)),
+          style: AppStyles.bodyLarge().copyWith(color: Colors.black),
           items: [
             const DropdownMenuItem<String?>(value: null, child: Text('All')),
-            ...items.map((item) => DropdownMenuItem<String?>(value: item, child: Text(labelBuilder(item)))),
+            ...items.map((item) => DropdownMenuItem<String?>(
+              value: item,
+              child: Text(
+                labelBuilder(item),
+                style: AppStyles.bodyMedium().copyWith(color: Colors.black),
+              ),
+            )),
           ],
           onChanged: onChanged,
         ),

@@ -4,17 +4,16 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
-
 class AssetSearchBar extends StatefulWidget {
   final ValueChanged<String> onChanged;
-  final VoidCallback? onFilterTap;
+  final VoidCallback onFilterTap;
   final bool hasActiveFilters;
   final String hint;
 
   const AssetSearchBar({
     super.key,
     required this.onChanged,
-    this.onFilterTap,
+    required this.onFilterTap,
     this.hasActiveFilters = false,
     this.hint = 'Search by name, ID, category, or lab',
   });
@@ -32,84 +31,77 @@ class _AssetSearchBarState extends State<AssetSearchBar> {
     super.dispose();
   }
 
-  void _clear() {
-    _controller.clear();
-    widget.onChanged('');
-    setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: TextField(
-              controller: _controller,
-              style: AppStyles.bodyMedium(),
-              onChanged: (value) {
-                widget.onChanged(value);
-                setState(() {});
-              },
-              decoration: InputDecoration(
-                hintText: widget.hint,
-                hintStyle: AppStyles.bodyMedium(color: AppColors.textHint),
-                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
-                suffixIcon: _controller.text.isNotEmpty
-                    ? IconButton(
-                  icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 20),
-                  onPressed: _clear,
-                )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: AppConstants.paddingMedium),
-              ),
-            ),
-          ),
-        ),
-        if (widget.onFilterTap != null) ...[
-          const SizedBox(width: AppConstants.paddingSmall),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: widget.hasActiveFilters ? AppColors.primary : AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-                  border: Border.all(
-                    color: widget.hasActiveFilters ? AppColors.primary : AppColors.border,
-                  ),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.tune_rounded,
-                    color: widget.hasActiveFilters ? AppColors.textOnPrimary : AppColors.textSecondary,
-                  ),
-                  onPressed: widget.onFilterTap,
-                ),
-              ),
-              if (widget.hasActiveFilters)
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    height: 10,
-                    width: 10,
-                    decoration: const BoxDecoration(
-                      color: AppColors.accent,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade100,
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
-      ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              onChanged: widget.onChanged,
+              style: AppStyles.bodyMedium().copyWith(
+                color: Colors.black,
+              ),
+              decoration: InputDecoration(
+                hintText: widget.hint,
+                hintStyle: AppStyles.bodyMedium(color: Colors.grey.shade500),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: Colors.grey.shade600,
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: AppConstants.paddingMedium,
+                ),
+                suffixIcon: _controller.text.isNotEmpty
+                    ? IconButton(
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: Colors.grey.shade600,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    _controller.clear();
+                    widget.onChanged('');
+                    setState(() {});
+                  },
+                )
+                    : null,
+              ),
+            ),
+          ),
+          Container(
+            height: 30,
+            width: 1,
+            color: Colors.grey.shade300,
+          ),
+          IconButton(
+            icon: Badge(
+              isLabelVisible: widget.hasActiveFilters,
+              backgroundColor: AppColors.primary,
+              child: Icon(
+                Icons.filter_list_rounded,
+                color: widget.hasActiveFilters ? AppColors.primary : Colors.grey.shade600,
+              ),
+            ),
+            onPressed: widget.onFilterTap,
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
     );
   }
 }

@@ -87,95 +87,159 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final authViewModel = context.watch<AuthViewModel>();
     final user = authViewModel.currentUser;
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        title: Text('Student Dashboard', style: AppStyles.heading4()),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () =>
-                Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+    // ================================================================
+    // FORCE LIGHT MODE - Student Dashboard ko light mode mein rakho
+    // ================================================================
+    return Theme(
+      data: ThemeData.light().copyWith(
+        useMaterial3: true,
+        scaffoldBackgroundColor: AppColors.background,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          brightness: Brightness.light,
+          primary: AppColors.primary,
+          secondary: AppColors.secondary,
+          error: AppColors.error,
+          surface: AppColors.surface,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppColors.background,
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
-          const SizedBox(width: AppConstants.paddingSmall),
-        ],
-      ),
-      drawer: CustomDrawer(
-        userName: user?.fullName ?? 'Student',
-        userRole: 'Student',
-        userEmail: user?.email,
-        onLogout: () => _handleLogout(authViewModel),
-        menuItems: [
-          DrawerMenuItem(icon: Icons.dashboard_outlined, label: 'Dashboard', onTap: () => Navigator.of(context).pop()),
-          DrawerMenuItem(icon: Icons.inventory_2_outlined, label: 'View Assets', onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).pushNamed(AppRoutes.assetsScreen);
-          }),
-          DrawerMenuItem(icon: Icons.add_alert_outlined, label: 'Submit Complaint', onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).pushNamed(AppRoutes.addComplaint);
-          }),
-          DrawerMenuItem(icon: Icons.history_rounded, label: 'Complaint History', onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).pushNamed(AppRoutes.complaintsScreen);
-          }),
-          DrawerMenuItem(icon: Icons.notifications_none_rounded, label: 'Notifications', onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).pushNamed(AppRoutes.notificationsScreen);
-          }),
-          DrawerMenuItem(icon: Icons.person_outline_rounded, label: 'Profile', onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).pushNamed(AppRoutes.profileScreen);
-          }),
-        ],
-      ),
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: () => _handleRefresh(context),
-        child: user == null
-            ? _buildLoadingState()
-            : ListView(
-          padding: const EdgeInsets.all(AppConstants.paddingLarge),
-          children: [
-            _StudentWelcomeHeader(user: user),
-            const SizedBox(height: AppConstants.paddingLarge),
-            Text('Quick Actions', style: AppStyles.heading4()),
-            const SizedBox(height: AppConstants.paddingMedium),
-            _buildQuickActionsGrid(),
-            const SizedBox(height: AppConstants.paddingLarge),
-            Text('More', style: AppStyles.heading4()),
-            const SizedBox(height: AppConstants.paddingMedium),
-            DashboardCard(
-              icon: Icons.notifications_none_rounded,
-              title: 'Notifications',
-              subtitle: 'Stay updated on your complaint status',
-              iconColor: AppColors.accent,
-              onTap: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
-            ),
-            const SizedBox(height: AppConstants.paddingMedium),
-            DashboardCard(
-              icon: Icons.person_outline_rounded,
-              title: 'Profile',
-              subtitle: 'View and edit your account details',
-              iconColor: AppColors.info,
-              onTap: () => Navigator.of(context).pushNamed(AppRoutes.profileScreen),
-            ),
-            const SizedBox(height: AppConstants.paddingMedium),
-            DashboardCard(
-              icon: Icons.logout_rounded,
-              title: 'Logout',
-              subtitle: 'Sign out of your account',
-              iconColor: AppColors.error,
-              onTap: () => _handleLogout(authViewModel),
-            ),
-            const SizedBox(height: AppConstants.paddingLarge),
-          ],
+        ),
+        cardTheme: CardThemeData(
+          color: AppColors.card,
+          elevation: 1,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+          ),
+        ),
+        textTheme: ThemeData.light().textTheme.copyWith(
+          bodyLarge: TextStyle(color: AppColors.textPrimary),
+          bodyMedium: TextStyle(color: AppColors.textPrimary),
         ),
       ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _bottomNavIndex,
-        items: _bottomNavItems,
-        onTap: _onBottomNavTap,
+      child: Scaffold(
+        backgroundColor: AppColors.surface,
+        appBar: AppBar(
+          title: Text('Student Dashboard', style: AppStyles.heading4()),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_none_rounded),
+              onPressed: () =>
+                  Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+            ),
+            const SizedBox(width: AppConstants.paddingSmall),
+          ],
+        ),
+        drawer: CustomDrawer(
+          userName: user?.fullName ?? 'Student',
+          userRole: 'Student',
+          userEmail: user?.email,
+          onLogout: () => _handleLogout(authViewModel),
+          menuItems: [
+            DrawerMenuItem(
+              icon: Icons.dashboard_outlined,
+              label: 'Dashboard',
+              onTap: () => Navigator.of(context).pop(),
+            ),
+            DrawerMenuItem(
+              icon: Icons.inventory_2_outlined,
+              label: 'View Assets',
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed(AppRoutes.assetsScreen);
+              },
+            ),
+            DrawerMenuItem(
+              icon: Icons.add_alert_outlined,
+              label: 'Submit Complaint',
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed(AppRoutes.addComplaint);
+              },
+            ),
+            DrawerMenuItem(
+              icon: Icons.history_rounded,
+              label: 'Complaint History',
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed(AppRoutes.complaintsScreen);
+              },
+            ),
+            DrawerMenuItem(
+              icon: Icons.notifications_none_rounded,
+              label: 'Notifications',
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed(AppRoutes.notificationsScreen);
+              },
+            ),
+            DrawerMenuItem(
+              icon: Icons.person_outline_rounded,
+              label: 'Profile',
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed(AppRoutes.profileScreen);
+              },
+            ),
+          ],
+        ),
+        body: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () => _handleRefresh(context),
+          child: user == null
+              ? _buildLoadingState()
+              : ListView(
+            padding: const EdgeInsets.all(AppConstants.paddingLarge),
+            children: [
+              _StudentWelcomeHeader(user: user),
+              const SizedBox(height: AppConstants.paddingLarge),
+              Text('Quick Actions', style: AppStyles.heading4()),
+              const SizedBox(height: AppConstants.paddingMedium),
+              _buildQuickActionsGrid(),
+              const SizedBox(height: AppConstants.paddingLarge),
+              Text('More', style: AppStyles.heading4()),
+              const SizedBox(height: AppConstants.paddingMedium),
+              DashboardCard(
+                icon: Icons.notifications_none_rounded,
+                title: 'Notifications',
+                subtitle: 'Stay updated on your complaint status',
+                iconColor: AppColors.accent,
+                onTap: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+              ),
+              const SizedBox(height: AppConstants.paddingMedium),
+              DashboardCard(
+                icon: Icons.person_outline_rounded,
+                title: 'Profile',
+                subtitle: 'View and edit your account details',
+                iconColor: AppColors.info,
+                onTap: () => Navigator.of(context).pushNamed(AppRoutes.profileScreen),
+              ),
+              const SizedBox(height: AppConstants.paddingMedium),
+              DashboardCard(
+                icon: Icons.logout_rounded,
+                title: 'Logout',
+                subtitle: 'Sign out of your account',
+                iconColor: AppColors.error,
+                onTap: () => _handleLogout(authViewModel),
+              ),
+              const SizedBox(height: AppConstants.paddingLarge),
+            ],
+          ),
+        ),
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: _bottomNavIndex,
+          items: _bottomNavItems,
+          onTap: _onBottomNavTap,
+        ),
       ),
     );
   }

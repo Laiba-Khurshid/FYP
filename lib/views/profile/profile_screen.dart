@@ -129,7 +129,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String _roleLabel(String role) {
     const labels = {
-      AppConstants.roleAdmin: 'Admin',
+      AppConstants.roleAdmin: 'Asset Manager',
       AppConstants.roleHOD: 'Head of Department',
       AppConstants.roleVicePrincipal: 'Vice Principal',
       AppConstants.rolePrincipal: 'Principal',

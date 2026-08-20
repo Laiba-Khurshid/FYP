@@ -8,7 +8,6 @@ import 'package:project/models/user_model.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/services/audit_service.dart';
 
-/// A custom, UI-friendly exception thrown by [ProfileService].
 class ProfileException implements Exception {
   final String message;
   const ProfileException(this.message);
@@ -17,8 +16,6 @@ class ProfileException implements Exception {
   String toString() => message;
 }
 
-/// Encapsulates all Cloud Firestore and Firebase Storage logic for the
-/// Profile Management module.
 class ProfileService {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -35,7 +32,6 @@ class ProfileService {
   CollectionReference<Map<String, dynamic>> get _usersRef =>
       _firestore.collection(AppConstants.usersCollection);
 
-  /// Fetches the current profile for [uid] fresh from Firestore.
   Future<UserModel> fetchProfile(String uid) async {
     try {
       final doc = await _usersRef.doc(uid).get();
@@ -48,7 +44,6 @@ class ProfileService {
     }
   }
 
-  /// Updates the editable fields of a user's profile.
   Future<UserModel> updateProfile({
     required UserModel existing,
     required String fullName,
@@ -60,9 +55,6 @@ class ProfileService {
       String? profileImage = existing.profileImage;
 
       if (newProfileImage != null) {
-        // ============================================================
-        // IMAGE COMPRESS KAREIN (SIZE KAM KAREIN)
-        // ============================================================
         final compressedImage = await _compressImage(newProfileImage);
         profileImage = await _uploadProfileImage(compressedImage, existing.uid);
       } else if (removeProfileImage) {
@@ -100,10 +92,6 @@ class ProfileService {
     }
   }
 
-  // ============================================================
-  // IMAGE UPLOAD WITH COMPRESSION
-  // ============================================================
-
   Future<String> _uploadProfileImage(Uint8List imageBytes, String uid) async {
     try {
       final ref = _storage.ref().child('profile_images').child('$uid.jpg');
@@ -120,25 +108,26 @@ class ProfileService {
     }
   }
 
-  /// Compress image to reduce upload time (from ~2-3MB to ~200-300KB)
+  // ================================================================
+  // FASTEST COMPRESSION - 852KB → 100KB
+  // ================================================================
   Future<Uint8List> _compressImage(Uint8List bytes) async {
     try {
-      // Decode image
       final image = img.decodeImage(bytes);
       if (image == null) return bytes;
 
-      // Resize to max 400px (maintain aspect ratio)
+      // Resize to max 300px (profile picture ke liye kaafi hai)
       final resized = img.copyResize(
         image,
-        width: 400,
-        height: 400,
+        width: 300,
+        height: 300,
         interpolation: img.Interpolation.average,
       );
 
-      // Compress to 70% quality
-      return Uint8List.fromList(img.encodeJpg(resized, quality: 70));
+      // Compress to 50% quality
+      return Uint8List.fromList(img.encodeJpg(resized, quality: 50));
     } catch (_) {
-      return bytes; // If compression fails, return original
+      return bytes;
     }
   }
 }

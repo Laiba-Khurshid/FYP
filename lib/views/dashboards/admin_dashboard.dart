@@ -79,7 +79,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
       return;
     }
     if (index == 2) {
-      // Reports - Navigate to reports screen
       Navigator.of(context).pushNamed(AppRoutes.reportsScreen);
       return;
     }
@@ -107,9 +106,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: Text('Admin Dashboard', style: AppStyles.heading4()),
+        title: Text('Asset Manager Dashboard', style: AppStyles.heading4()),
         actions: [
-          // Pending Users Badge
+          // ============================================================
+          // NOTIFICATION ICON - ADDED
+          // ============================================================
+          IconButton(
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+          ),
+          // ============================================================
+          // PENDING USERS BADGE
+          // ============================================================
           if (pendingCount > 0)
             Stack(
               children: [
@@ -172,8 +180,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ],
       ),
       drawer: CustomDrawer(
-        userName: user?.fullName ?? 'Admin',
-        userRole: 'Admin',
+        userName: user?.fullName ?? 'Asset Manager',
+        userRole: 'Asset Manager',
         userEmail: user?.email,
         onLogout: () => _handleLogout(authViewModel),
         menuItems: [
@@ -443,7 +451,7 @@ class _AdminWelcomeHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Admin • ${user.department}',
+                  'Asset Manager • ${user.department}',
                   style: AppStyles.bodySmall(
                     color: AppColors.textOnPrimary.withValues(alpha: 0.9),
                   ),
