@@ -31,9 +31,10 @@ class QuickActionCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
         child: Container(
+          height: 130,  // ✅ FIXED HEIGHT
           padding: const EdgeInsets.symmetric(
             horizontal: AppConstants.paddingMedium,
-            vertical: AppConstants.paddingLarge,
+            vertical: AppConstants.paddingMedium,
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
@@ -42,24 +43,27 @@ class QuickActionCard extends StatelessWidget {
           child: Stack(
             children: [
               Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,  // ✅ CENTER
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
                     height: 44,
                     width: 44,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
+                      color: color.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(icon, color: color, size: AppConstants.iconSizeMedium),
                   ),
-                  const SizedBox(height: AppConstants.paddingMedium),
+                  const SizedBox(height: AppConstants.paddingSmall),
                   Text(
                     title,
-                    style: AppStyles.bodyMedium().copyWith(fontWeight: FontWeight.w600),
+                    style: AppStyles.bodyMedium().copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
@@ -68,14 +72,15 @@ class QuickActionCard extends StatelessWidget {
                       style: AppStyles.caption(color: AppColors.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ],
               ),
               if (count != null && count! > 0)
                 Positioned(
-                  top: 0,
-                  right: 0,
+                  top: 4,
+                  right: 4,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
