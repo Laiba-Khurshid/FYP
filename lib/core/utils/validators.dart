@@ -119,9 +119,6 @@ class Validators {
     return null;
   }
 
-  // ================================================================
-  // NEW METHODS FOR ASSET SCREEN (ADDED)
-  // ================================================================
 
   /// Validates asset name field.
   static String? validateAssetName(String? value) {

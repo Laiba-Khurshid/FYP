@@ -1,10 +1,9 @@
-/// Asset Management Module constants for AssetFlow.
+/// Module constants for AssetFlow.
 class AssetConstants {
   AssetConstants._();
 
-  // ---------------------------------------------------------------------
-  // Laboratories
-  // ---------------------------------------------------------------------
+  // Labs
+
   static const List<String> labs = [
     'Project Lab',
     'Smart Lab 1',
@@ -16,9 +15,6 @@ class AssetConstants {
     '912 Lab',
   ];
 
-  // ---------------------------------------------------------------------
-  // Asset categories, grouped for a readable dropdown UI.
-  // ---------------------------------------------------------------------
   static const Map<String, List<String>> categoryGroups = {
     'Computers & Devices': [
       'Computer System',
@@ -139,15 +135,10 @@ class AssetConstants {
 
   static String? prefixForCategory(String category) => trackedCategoryPrefixes[category];
 
-  // ---------------------------------------------------------------------
-  // Default values for newly created asset_item documents
-  // ---------------------------------------------------------------------
+
   static const String defaultItemStatus = 'Available';
   static const String defaultItemRemarks = '';
 
-  // ================================================================
-  // FIRESTORE SUBCOLLECTION / META DOCUMENT NAMES (ADDED)
-  // ================================================================
   static const String assetItemsSubcollection = 'asset_items';
   static const String metaCollection = 'meta';
   static const String assetCounterDoc = 'asset_counter';

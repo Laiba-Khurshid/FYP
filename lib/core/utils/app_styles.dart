@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Centralized typography for the AssetFlow application.
-///
-/// Uses the Poppins font family via [GoogleFonts]. Every text style used
-/// across the app should originate from this file to keep typography
-/// consistent between screens and modules.
+
 class AppStyles {
   AppStyles._();
 

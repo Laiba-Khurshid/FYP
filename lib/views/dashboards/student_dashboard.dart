@@ -87,9 +87,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final authViewModel = context.watch<AuthViewModel>();
     final user = authViewModel.currentUser;
 
-    // ================================================================
-    // FORCE LIGHT MODE - Student Dashboard ko light mode mein rakho
-    // ================================================================
+
     return Theme(
       data: ThemeData.light().copyWith(
         useMaterial3: true,
@@ -264,7 +262,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: AppConstants.paddingMedium,
       mainAxisSpacing: AppConstants.paddingMedium,
-      childAspectRatio: 1.15,
+      childAspectRatio: 1.3, // ✅ CHANGE: 1.15 se 1.3
       children: [
         QuickActionCard(
           icon: Icons.inventory_2_rounded,
