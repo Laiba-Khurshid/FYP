@@ -13,7 +13,6 @@ import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
 import 'package:project/widgets/quick_action_card.dart';
-import 'package:project/widgets/summary_card.dart';
 
 class PrincipalDashboard extends StatefulWidget {
   const PrincipalDashboard({super.key});
@@ -74,11 +73,10 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
       Navigator.of(context).pushNamed(AppRoutes.reportsScreen);
       return;
     }
-    if (_bottomNavItems[index].label == 'Profile') {
+    if (index == 3) {
       Navigator.of(context).pushNamed(AppRoutes.profileScreen);
       return;
     }
-    _showComingSoon(_bottomNavItems[index].label);
   }
 
   void _closeDrawerThen(String feature) {
@@ -142,10 +140,13 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
           children: [
             _PrincipalWelcomeHeader(user: user),
             const SizedBox(height: AppConstants.paddingLarge),
-            Text('Overview', style: AppStyles.heading4()),
-            const SizedBox(height: AppConstants.paddingMedium),
-            _buildStatsGrid(),
-            const SizedBox(height: AppConstants.paddingLarge),
+            // ============================================================
+            // OVERVIEW SECTION REMOVED
+            // ============================================================
+            // Text('Overview', style: AppStyles.heading4()),  // REMOVED
+            // const SizedBox(height: AppConstants.paddingMedium),
+            // _buildStatsGrid(),  // REMOVED
+            // const SizedBox(height: AppConstants.paddingLarge),
             Text('Quick Actions', style: AppStyles.heading4()),
             const SizedBox(height: AppConstants.paddingMedium),
             _buildQuickActionsGrid(authViewModel),
@@ -169,31 +170,6 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
           child: const Center(
             child: CircularProgressIndicator(color: AppColors.primary),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: AppConstants.paddingMedium,
-      mainAxisSpacing: AppConstants.paddingMedium,
-      childAspectRatio: 1.35,
-      children: const [
-        SummaryCard(
-          icon: Icons.priority_high_rounded,
-          title: 'Final Escalations',
-          count: '—',
-          accentColor: AppColors.statusEscalated,
-        ),
-        SummaryCard(
-          icon: Icons.bar_chart_rounded,
-          title: 'Reports',
-          count: '—',
-          accentColor: AppColors.secondary,
         ),
       ],
     );
@@ -259,7 +235,7 @@ class _PrincipalWelcomeHeader extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundColor: AppColors.textOnPrimary.withOpacity(0.2),
+            backgroundColor: AppColors.textOnPrimary.withValues(alpha: 0.2),
             backgroundImage: (user.profileImage != null && (user.profileImage as String).isNotEmpty)
                 ? NetworkImage(user.profileImage as String)
                 : null,
@@ -284,19 +260,19 @@ class _PrincipalWelcomeHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${user.department}',
-                  style: AppStyles.bodySmall(color: AppColors.textOnPrimary.withOpacity(0.9)),
+                  style: AppStyles.bodySmall(color: AppColors.textOnPrimary.withValues(alpha: 0.9)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textOnPrimary.withOpacity(0.85)),
+                    Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textOnPrimary.withValues(alpha: 0.85)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         todayLabel,
-                        style: AppStyles.caption(color: AppColors.textOnPrimary.withOpacity(0.85)),
+                        style: AppStyles.caption(color: AppColors.textOnPrimary.withValues(alpha: 0.85)),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

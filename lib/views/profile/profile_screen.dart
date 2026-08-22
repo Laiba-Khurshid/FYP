@@ -82,7 +82,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     const Icon(Icons.wifi_off_rounded, size: 56, color: AppColors.textHint),
                     const SizedBox(height: AppConstants.paddingMedium),
-                    Text(viewModel.errorMessage!, textAlign: TextAlign.center, style: AppStyles.bodyMedium(color: AppColors.textSecondary)),
+                    Text(
+                      viewModel.errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: AppStyles.bodyMedium(color: AppColors.textSecondary),
+                    ),
                     const SizedBox(height: AppConstants.paddingLarge),
                     CustomButton(label: 'Retry', width: 160, onPressed: _handleRefresh),
                   ],
@@ -99,6 +103,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final isStudent = profile.isStudent as bool;
+    final isTeacher = profile.role == AppConstants.roleTeacher;
+
+    // ============================================================
+    // SIRF STUDENT AUR TEACHER KO HI ID DIKHEGI
+    // HOD, VP, Principal, Admin ko NAHI DIKHEGI
+    // ============================================================
+    final showId = isStudent || isTeacher;
 
     return ListView(
       padding: const EdgeInsets.all(AppConstants.paddingLarge),
@@ -106,9 +117,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ProfileHeader(user: profile),
         const SizedBox(height: AppConstants.paddingLarge),
         _sectionCard([
-          _infoRow(Icons.badge_outlined, isStudent ? 'Roll Number' : 'Employee ID',
-              (isStudent ? profile.rollNumber : profile.employeeId) as String? ?? 'Not set'),
-          _divider(),
+          // ============================================================
+          // ID FIELD - SIRF STUDENT AUR TEACHER KE LIYE
+          // ============================================================
+          if (showId) ...[
+            _infoRow(
+              Icons.badge_outlined,
+              isStudent ? 'Roll Number' : 'Employee ID',
+              (isStudent ? profile.rollNumber : profile.employeeId) as String? ?? 'Not set',
+            ),
+            _divider(),
+          ],
           _infoRow(Icons.email_outlined, 'Email', profile.email as String, readOnly: true),
           _divider(),
           _infoRow(Icons.work_outline_rounded, 'Role', _roleLabel(profile.role as String), readOnly: true),

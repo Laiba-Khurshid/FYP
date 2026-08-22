@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:project/routes/app_routes.dart';
 import 'package:project/core/utils/app_colors.dart';
@@ -23,103 +22,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // ============================================================
-  // EMAIL SUGGESTIONS KE LIYE VARIABLES
-  // ============================================================
-  List<String> _emailSuggestions = [];
-  final FocusNode _emailFocusNode = FocusNode();
-  bool _isFocused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadEmailSuggestions();
-
-    _emailController.addListener(() {
-      _updateSuggestions(_emailController.text);
-    });
-  }
-
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _emailFocusNode.dispose();
     super.dispose();
-  }
-
-  // ============================================================
-  // EMAIL SUGGESTIONS - LOAD & SAVE
-  // ============================================================
-
-  Future<void> _loadEmailSuggestions() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedEmails = prefs.getStringList('saved_emails') ?? [];
-      setState(() {
-        _emailSuggestions = savedEmails;
-      });
-    } catch (e) {
-      print('Error loading email suggestions: $e');
-    }
-  }
-
-  Future<void> _saveEmailSuggestion(String email) async {
-    if (email.trim().isEmpty) return;
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedEmails = prefs.getStringList('saved_emails') ?? [];
-
-      // Remove if already exists
-      savedEmails.remove(email.trim());
-      // Add at the top
-      savedEmails.insert(0, email.trim());
-      // Keep only last 10 emails
-      if (savedEmails.length > 10) {
-        savedEmails.removeRange(10, savedEmails.length);
-      }
-
-      await prefs.setStringList('saved_emails', savedEmails);
-      setState(() {
-        _emailSuggestions = savedEmails;
-      });
-    } catch (e) {
-      print('Error saving email suggestion: $e');
-    }
-  }
-
-  void _updateSuggestions(String query) {
-    if (query.isEmpty) {
-      setState(() => _emailSuggestions = []);
-      return;
-    }
-
-    // Load suggestions from shared preferences
-    SharedPreferences.getInstance().then((pref) {
-      final savedEmails = pref.getStringList('saved_emails') ?? [];
-      final filtered = savedEmails
-          .where((email) => email.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-      setState(() {
-        _emailSuggestions = filtered;
-      });
-    }).catchError((e) {
-      print('Error loading suggestions: $e');
-    });
   }
 
   Future<void> _handleLogin(AuthViewModel authViewModel) async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
 
-    final email = _emailController.text.trim();
-
-    // Save email for suggestions
-    await _saveEmailSuggestion(email);
-
     final success = await authViewModel.login(
-      email: email,
+      email: _emailController.text,
       password: _passwordController.text,
     );
 
@@ -176,10 +91,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: AppConstants.paddingXLarge),
                         _buildHeader(),
                         const SizedBox(height: AppConstants.paddingXLarge),
-                        // ============================================================
-                        // EMAIL FIELD WITH SUGGESTIONS
-                        // ============================================================
-                        _buildEmailField(),
+                        CustomTextField(
+                          label: 'Email',
+                          hint: 'you@example.com',
+                          controller: _emailController,
+                          prefixIcon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: Validators.validateEmail,
+                        ),
                         const SizedBox(height: AppConstants.paddingMedium),
                         CustomTextField(
                           label: 'Password',
@@ -289,113 +208,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ============================================================
-  // EMAIL FIELD WITH AUTO-SUGGESTIONS
-  // ============================================================
-  Widget _buildEmailField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Email', style: AppStyles.label()),
-        const SizedBox(height: AppConstants.paddingSmall),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            children: [
-              TextField(
-                controller: _emailController,
-                focusNode: _emailFocusNode,
-                style: AppStyles.bodyMedium(),
-                keyboardType: TextInputType.emailAddress,
-                onTap: () {
-                  setState(() => _isFocused = true);
-                  _updateSuggestions(_emailController.text);
-                },
-                onChanged: (value) => _updateSuggestions(value),
-                decoration: InputDecoration(
-                  hintText: 'you@example.com',
-                  hintStyle: AppStyles.bodyMedium(color: AppColors.textHint),
-                  prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppConstants.paddingMedium,
-                    vertical: AppConstants.paddingMedium,
-                  ),
-                  suffixIcon: _emailController.text.isNotEmpty
-                      ? IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.textHint),
-                    onPressed: () {
-                      _emailController.clear();
-                      setState(() => _emailSuggestions = []);
-                    },
-                  )
-                      : null,
-                ),
-              ),
-              // ============================================================
-              // SUGGESTIONS LIST
-              // ============================================================
-              if (_emailSuggestions.isNotEmpty && _emailController.text.isNotEmpty)
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 150),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(AppConstants.borderRadiusMedium),
-                      bottomRight: Radius.circular(AppConstants.borderRadiusMedium),
-                    ),
-                    border: Border(
-                      top: BorderSide(color: AppColors.border, width: 0.5),
-                      left: BorderSide(color: AppColors.border, width: 0.5),
-                      right: BorderSide(color: AppColors.border, width: 0.5),
-                    ),
-                  ),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
-                    itemCount: _emailSuggestions.length,
-                    itemBuilder: (context, index) {
-                      final email = _emailSuggestions[index];
-                      return ListTile(
-                        dense: true,
-                        leading: const Icon(Icons.history_rounded, size: 16, color: AppColors.textHint),
-                        title: Text(
-                          email,
-                          style: AppStyles.bodyMedium().copyWith(
-                            color: Colors.black,
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.textHint),
-                          onPressed: () async {
-                            // Remove email from suggestions
-                            final prefs = await SharedPreferences.getInstance();
-                            final savedEmails = prefs.getStringList('saved_emails') ?? [];
-                            savedEmails.remove(email);
-                            await prefs.setStringList('saved_emails', savedEmails);
-                            _loadEmailSuggestions();
-                          },
-                        ),
-                        onTap: () {
-                          _emailController.text = email;
-                          setState(() => _emailSuggestions = []);
-                          _emailFocusNode.unfocus();
-                        },
-                      );
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildRememberAndForgot(AuthViewModel authViewModel) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -441,6 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ],
+
       ),
     );
   }

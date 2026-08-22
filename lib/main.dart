@@ -82,7 +82,7 @@ class _AssetFlowBootstrapState extends State<AssetFlowBootstrap> {
         future: _initialization,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const LoadingScreen(message: 'Starting CS AssetFlow');  // ✅ CHANGE
+            return const LoadingScreen(message: 'Starting CS AssetFlow');
           }
           if (snapshot.hasError) {
             return ErrorScreen(
@@ -198,19 +198,23 @@ class AssetFlowApp extends StatelessWidget {
           ),
         ),
       ],
-      child: MaterialApp(
-        title: AppConstants.appName,
-        debugShowCheckedModeBanner: false,
-        theme: _buildLightTheme(),
-        initialRoute: AppRoutes.splash,
-        onGenerateRoute: AppRoutes.generateRoute,
+      child: Consumer<ThemeViewModel>(
+        builder: (context, themeViewModel, _) {
+          return MaterialApp(
+            title: AppConstants.appName,
+            debugShowCheckedModeBanner: false,
+            theme: _buildLightTheme(),
+            initialRoute: AppRoutes.splash,
+            onGenerateRoute: AppRoutes.generateRoute,
+          );
+        },
       ),
     );
   }
 }
 
 // ================================================================
-// LIGHT THEME (SIRF YAHI USE HOGA)
+// LIGHT THEME
 // ================================================================
 ThemeData _buildLightTheme() {
   final baseTextTheme = GoogleFonts.poppinsTextTheme();

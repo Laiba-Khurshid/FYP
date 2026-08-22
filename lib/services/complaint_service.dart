@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -25,6 +26,15 @@ class ComplaintService {
   final NotificationService _notificationService;
   final AuditService _auditService;
 
+  // ================================================================
+  // ESCALATION TIMELINE (DAYS)
+  // ================================================================
+  static const int escalationDaysToHOD = 10;
+  static const int escalationDaysToVP = 20;
+  static const int escalationDaysToPrincipal = 30;
+
+  Timer? _escalationTimer;
+
   ComplaintService({
     FirebaseFirestore? firestore,
     FirebaseStorage? storage,
@@ -37,6 +47,171 @@ class ComplaintService {
 
   CollectionReference<Map<String, dynamic>> get _complaintsRef =>
       _firestore.collection(AppConstants.complaintsCollection);
+
+  // ================================================================
+  // START ESCALATION MONITORING
+  // ================================================================
+  void startEscalationMonitoring() {
+    _escalationTimer?.cancel();
+    _escalationTimer = Timer.periodic(
+      const Duration(minutes: 1), // Testing: 1 minute (production mein hours/ days karein)
+          (_) => _checkAndEscalateComplaints(),
+    );
+  }
+
+  Future<void> _checkAndEscalateComplaints() async {
+    try {
+      // Pending complaints fetch karein
+      final snapshot = await _complaintsRef
+          .where('status', isEqualTo: AppConstants.statusPending)
+          .get();
+
+      if (snapshot.docs.isEmpty) return;
+
+      for (final doc in snapshot.docs) {
+        final complaint = ComplaintModel.fromDocument(doc);
+        await _checkAndEscalateSingleComplaint(complaint);
+      }
+    } catch (e) {
+      print('Escalation check error: $e');
+    }
+  }
+
+  Future<void> _checkAndEscalateSingleComplaint(ComplaintModel complaint) async {
+    final now = DateTime.now();
+    final daysSinceCreation = now.difference(complaint.createdAt).inDays;
+
+    // ================================================================
+    // ESCALATION LOGIC
+    // ================================================================
+
+    // 30+ days → Principal (Final)
+    if (daysSinceCreation >= escalationDaysToPrincipal &&
+        complaint.escalationLevel < AppConstants.escalationLevelPrincipal) {
+      await _escalateComplaint(complaint, AppConstants.rolePrincipal);
+      return;
+    }
+
+    // 20+ days → VP
+    if (daysSinceCreation >= escalationDaysToVP &&
+        complaint.escalationLevel < AppConstants.escalationLevelVicePrincipal) {
+      await _escalateComplaint(complaint, AppConstants.roleVicePrincipal);
+      return;
+    }
+
+    // 10+ days → HOD
+    if (daysSinceCreation >= escalationDaysToHOD &&
+        complaint.escalationLevel < AppConstants.escalationLevelVicePrincipal) {
+      await _escalateComplaint(complaint, AppConstants.roleHOD);
+      return;
+    }
+  }
+
+  // ================================================================
+  // PRIVATE ESCALATION METHOD
+  // ================================================================
+  Future<void> _escalateComplaint(ComplaintModel complaint, String nextAssignee) async {
+    final nextLevel = complaint.escalationLevel + 1;
+
+    try {
+      await _complaintsRef.doc(complaint.complaintId).update({
+        'status': AppConstants.statusEscalated,
+        'escalationLevel': nextLevel,
+        'assignedTo': nextAssignee,
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+
+      // ============================================================
+      // NOTIFICATION: Escalated User ko
+      // ============================================================
+      await _notificationService.notify(
+        title: 'Complaint Escalated to You',
+        message: '${complaint.assetName} in ${complaint.labName} has been escalated to you.',
+        type: AppConstants.notificationTypeComplaintEscalated,
+        role: nextAssignee,
+        relatedId: complaint.complaintId,
+      );
+
+      // ============================================================
+      // NOTIFICATION: Reporter ko
+      // ============================================================
+      await _notificationService.notify(
+        title: 'Complaint Escalated',
+        message: 'Your complaint about ${complaint.assetName} has been escalated for further review.',
+        type: AppConstants.notificationTypeComplaintEscalated,
+        userId: complaint.reportedBy,
+        relatedId: complaint.complaintId,
+      );
+
+      // ============================================================
+      // AUDIT LOG
+      // ============================================================
+      await _auditService.record(
+        userId: 'system',
+        userName: 'System',
+        role: 'system',
+        action: AppConstants.auditActionComplaintEscalated,
+        module: AppConstants.auditModuleComplaint,
+        referenceId: complaint.complaintId,
+      );
+
+      print('✅ Complaint ${complaint.complaintId} escalated to $nextAssignee');
+    } catch (e) {
+      print('❌ Escalation failed for ${complaint.complaintId}: $e');
+    }
+  }
+
+  // ================================================================
+  // PUBLIC ESCALATION METHOD (Manual)
+  // ================================================================
+  Future<void> escalateComplaint(
+      ComplaintModel complaint, {
+        required String actorId,
+        required String actorName,
+        required String actorRole,
+      }) async {
+    if (complaint.escalationLevel >= AppConstants.escalationLevelPrincipal) return;
+
+    final nextLevel = complaint.escalationLevel + 1;
+    final nextAssignee = nextLevel == AppConstants.escalationLevelVicePrincipal
+        ? AppConstants.roleVicePrincipal
+        : AppConstants.rolePrincipal;
+
+    try {
+      await _complaintsRef.doc(complaint.complaintId).update({
+        'status': AppConstants.statusEscalated,
+        'escalationLevel': nextLevel,
+        'assignedTo': nextAssignee,
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+
+      await _notificationService.notify(
+        title: 'Complaint Escalated to You',
+        message: '${complaint.assetName} in ${complaint.labName} has been escalated to you.',
+        type: AppConstants.notificationTypeComplaintEscalated,
+        role: nextAssignee,
+        relatedId: complaint.complaintId,
+      );
+      await _notificationService.notify(
+        title: 'Complaint Escalated',
+        message: 'Your complaint about ${complaint.assetName} has been escalated for further review.',
+        type: AppConstants.notificationTypeComplaintEscalated,
+        userId: complaint.reportedBy,
+        relatedId: complaint.complaintId,
+      );
+
+      await _auditService.record(
+        userId: actorId,
+        userName: actorName,
+        role: actorRole,
+        action: AppConstants.auditActionComplaintEscalated,
+        module: AppConstants.auditModuleComplaint,
+        referenceId: complaint.complaintId,
+      );
+    } on FirebaseException catch (e) {
+      throw ComplaintException(_mapFirebaseError(e));
+    }
+  }
 
   // -----------------------------------------------------------------
   // Read (stream) — role-based visibility
@@ -136,7 +311,7 @@ class ComplaintService {
         status: AppConstants.statusPending,
         createdAt: now,
         updatedAt: now,
-        assignedTo: AppConstants.roleAdmin,  // ✅ Asset Manager
+        assignedTo: AppConstants.roleAdmin,
         escalationLevel: AppConstants.escalationLevelNone,
         imageUrl: imageUrl,
       );
@@ -217,55 +392,6 @@ class ComplaintService {
         userName: actorName,
         role: actorRole,
         action: isResolved ? AppConstants.auditActionComplaintResolved : AppConstants.auditActionComplaintUpdated,
-        module: AppConstants.auditModuleComplaint,
-        referenceId: complaint.complaintId,
-      );
-    } on FirebaseException catch (e) {
-      throw ComplaintException(_mapFirebaseError(e));
-    }
-  }
-
-  Future<void> escalateComplaint(
-      ComplaintModel complaint, {
-        required String actorId,
-        required String actorName,
-        required String actorRole,
-      }) async {
-    if (complaint.escalationLevel >= AppConstants.escalationLevelPrincipal) return;
-
-    final nextLevel = complaint.escalationLevel + 1;
-    final nextAssignee = nextLevel == AppConstants.escalationLevelVicePrincipal
-        ? AppConstants.roleVicePrincipal
-        : AppConstants.rolePrincipal;
-
-    try {
-      await _complaintsRef.doc(complaint.complaintId).update({
-        'status': AppConstants.statusEscalated,
-        'escalationLevel': nextLevel,
-        'assignedTo': nextAssignee,
-        'updatedAt': Timestamp.fromDate(DateTime.now()),
-      });
-
-      await _notificationService.notify(
-        title: 'Complaint Escalated to You',
-        message: '${complaint.assetName} in ${complaint.labName} has been escalated to you.',
-        type: AppConstants.notificationTypeComplaintEscalated,
-        role: nextAssignee,
-        relatedId: complaint.complaintId,
-      );
-      await _notificationService.notify(
-        title: 'Complaint Escalated',
-        message: 'Your complaint about ${complaint.assetName} has been escalated for further review.',
-        type: AppConstants.notificationTypeComplaintEscalated,
-        userId: complaint.reportedBy,
-        relatedId: complaint.complaintId,
-      );
-
-      await _auditService.record(
-        userId: actorId,
-        userName: actorName,
-        role: actorRole,
-        action: AppConstants.auditActionComplaintEscalated,
         module: AppConstants.auditModuleComplaint,
         referenceId: complaint.complaintId,
       );

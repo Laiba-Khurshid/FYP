@@ -13,7 +13,6 @@ import 'package:project/viewmodels/auth_viewmodel.dart';
 import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
 import 'package:project/widgets/quick_action_card.dart';
-import 'package:project/widgets/summary_card.dart';
 
 class HodDashboard extends StatefulWidget {
   const HodDashboard({super.key});
@@ -74,11 +73,10 @@ class _HodDashboardState extends State<HodDashboard> {
       Navigator.of(context).pushNamed(AppRoutes.complaintsScreen);
       return;
     }
-    if (_bottomNavItems[index].label == 'Profile') {
+    if (index == 3) {
       Navigator.of(context).pushNamed(AppRoutes.profileScreen);
       return;
     }
-    _showComingSoon(_bottomNavItems[index].label);
   }
 
   void _closeDrawerThen(String feature) {
@@ -146,10 +144,13 @@ class _HodDashboardState extends State<HodDashboard> {
           children: [
             _HodWelcomeHeader(user: user),
             const SizedBox(height: AppConstants.paddingLarge),
-            Text('Department Overview', style: AppStyles.heading4()),
-            const SizedBox(height: AppConstants.paddingMedium),
-            _buildStatsGrid(),
-            const SizedBox(height: AppConstants.paddingLarge),
+            // ============================================================
+            // DEPARTMENT OVERVIEW REMOVED
+            // ============================================================
+            // Text('Department Overview', style: AppStyles.heading4()),  // REMOVED
+            // const SizedBox(height: AppConstants.paddingMedium),
+            // _buildStatsGrid(),  // REMOVED
+            // const SizedBox(height: AppConstants.paddingLarge),
             Text('Quick Actions', style: AppStyles.heading4()),
             const SizedBox(height: AppConstants.paddingMedium),
             _buildQuickActionsGrid(authViewModel),
@@ -173,45 +174,6 @@ class _HodDashboardState extends State<HodDashboard> {
           child: const Center(
             child: CircularProgressIndicator(color: AppColors.primary),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsGrid() {
-    // Placeholder counts. Real figures will be streamed from Firestore
-    // once the Assets and Complaints modules are implemented.
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: AppConstants.paddingMedium,
-      mainAxisSpacing: AppConstants.paddingMedium,
-      childAspectRatio: 1.35,
-      children: const [
-        SummaryCard(
-          icon: Icons.inventory_2_rounded,
-          title: 'Department Assets',
-          count: '—',
-          accentColor: AppColors.primary,
-        ),
-        SummaryCard(
-          icon: Icons.pending_actions_rounded,
-          title: 'Pending Complaints',
-          count: '—',
-          accentColor: AppColors.statusPending,
-        ),
-        SummaryCard(
-          icon: Icons.build_rounded,
-          title: 'Maintenance Requests',
-          count: '—',
-          accentColor: AppColors.statusInProgress,
-        ),
-        SummaryCard(
-          icon: Icons.priority_high_rounded,
-          title: 'Escalated Complaints',
-          count: '—',
-          accentColor: AppColors.statusEscalated,
         ),
       ],
     );
@@ -289,7 +251,7 @@ class _HodWelcomeHeader extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundColor: AppColors.textOnPrimary.withOpacity(0.2),
+            backgroundColor: AppColors.textOnPrimary.withValues(alpha: 0.2),
             backgroundImage: (user.profileImage != null && (user.profileImage as String).isNotEmpty)
                 ? NetworkImage(user.profileImage as String)
                 : null,
@@ -314,19 +276,19 @@ class _HodWelcomeHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${user.department}',
-                  style: AppStyles.bodySmall(color: AppColors.textOnPrimary.withOpacity(0.9)),
+                  style: AppStyles.bodySmall(color: AppColors.textOnPrimary.withValues(alpha: 0.9)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textOnPrimary.withOpacity(0.85)),
+                    Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textOnPrimary.withValues(alpha: 0.85)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         todayLabel,
-                        style: AppStyles.caption(color: AppColors.textOnPrimary.withOpacity(0.85)),
+                        style: AppStyles.caption(color: AppColors.textOnPrimary.withValues(alpha: 0.85)),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
