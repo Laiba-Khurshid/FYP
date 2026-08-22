@@ -104,12 +104,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final isStudent = profile.isStudent as bool;
     final isTeacher = profile.role == AppConstants.roleTeacher;
+    final isVP = profile.role == AppConstants.roleVicePrincipal;
+    final isPrincipal = profile.role == AppConstants.rolePrincipal;
+    final isHOD = profile.role == AppConstants.roleHOD;
+    final isAdmin = profile.role == AppConstants.roleAdmin;
 
     // ============================================================
     // SIRF STUDENT AUR TEACHER KO HI ID DIKHEGI
     // HOD, VP, Principal, Admin ko NAHI DIKHEGI
     // ============================================================
     final showId = isStudent || isTeacher;
+
+    // ============================================================
+    // DEPARTMENT - VP, PRINCIPAL, HOD, ADMIN KE LIYE HATAYA
+    // ============================================================
+    final showDepartment = !(isVP || isPrincipal || isHOD || isAdmin);
 
     return ListView(
       padding: const EdgeInsets.all(AppConstants.paddingLarge),
@@ -131,8 +140,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _infoRow(Icons.email_outlined, 'Email', profile.email as String, readOnly: true),
           _divider(),
           _infoRow(Icons.work_outline_rounded, 'Role', _roleLabel(profile.role as String), readOnly: true),
-          _divider(),
-          _infoRow(Icons.apartment_rounded, 'Department', profile.department as String, readOnly: true),
+          // ============================================================
+          // DEPARTMENT - VP, PRINCIPAL, HOD, ADMIN KE LIYE HATAYA
+          // ============================================================
+          if (showDepartment) ...[
+            _divider(),
+            _infoRow(Icons.apartment_rounded, 'Department', profile.department as String, readOnly: true),
+          ],
           _divider(),
           _infoRow(Icons.phone_outlined, 'Phone Number', (profile.phoneNumber as String?) ?? 'Not set'),
         ]),

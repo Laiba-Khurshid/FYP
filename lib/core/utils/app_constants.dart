@@ -83,7 +83,7 @@ class AppConstants {
   // ---------------------------------------------------------------------
   // User roles
   // ---------------------------------------------------------------------
-  static const String roleAdmin = 'admin';
+  static const String roleAdmin = 'asset_manager';
   static const String roleHOD = 'hod';
   static const String roleVicePrincipal = 'vice_principal';
   static const String rolePrincipal = 'principal';

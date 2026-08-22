@@ -40,6 +40,12 @@ import 'package:project/views/common/loading_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ============================================================
+  // START ESCALATION MONITORING
+  // ============================================================
+  final complaintService = ComplaintService();
+  complaintService.startEscalationMonitoring();
+
   runApp(const AssetFlowBootstrap());
 }
 

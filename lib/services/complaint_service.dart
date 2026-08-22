@@ -61,7 +61,7 @@ class ComplaintService {
 
   Future<void> _checkAndEscalateComplaints() async {
     try {
-      // Pending complaints fetch karein
+
       final snapshot = await _complaintsRef
           .where('status', isEqualTo: AppConstants.statusPending)
           .get();

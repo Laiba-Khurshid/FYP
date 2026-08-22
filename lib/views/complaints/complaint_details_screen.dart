@@ -42,7 +42,7 @@ class _ComplaintDetailsScreenState extends State<ComplaintDetailsScreen> {
   ];
 
   static const Map<String, String> _roleLabels = {
-    AppConstants.roleAdmin: 'Admin',
+    AppConstants.roleAdmin: 'Asset manager',
     AppConstants.roleHOD: 'HOD',
     AppConstants.roleVicePrincipal: 'Vice Principal',
     AppConstants.rolePrincipal: 'Principal',

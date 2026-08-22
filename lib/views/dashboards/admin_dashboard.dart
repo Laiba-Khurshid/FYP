@@ -7,6 +7,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
+import 'package:project/viewmodels/notification_viewmodel.dart';
 import 'package:project/viewmodels/user_viewmodel.dart';
 import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
@@ -37,6 +38,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       if (!mounted) return;
       final userViewModel = context.read<UserViewModel>();
       userViewModel.subscribe();
+
+      // ✅ Subscribe to notifications
+      final user = context.read<AuthViewModel>().currentUser;
+      if (user != null) {
+        context.read<NotificationViewModel>().subscribe(uid: user.uid, role: user.role);
+      }
     });
   }
 
@@ -109,11 +116,46 @@ class _AdminDashboardState extends State<AdminDashboard> {
         title: Text('Asset Manager Dashboard', style: AppStyles.heading4()),
         actions: [
           // ============================================================
-          // NOTIFICATION ICON - ADDED
+          // NOTIFICATION ICON WITH GREEN BADGE
           // ============================================================
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+          Consumer<NotificationViewModel>(
+            builder: (context, notificationVM, child) {
+              final unreadCount = notificationVM.unreadCount;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none_rounded),
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           // ============================================================
           // PENDING USERS BADGE
@@ -254,9 +296,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               icon: Icons.verified_user_outlined,
               title: 'Verify Users',
               subtitle: pendingCount > 0
-                  ? '$pendingCount pending registration${
-                  pendingCount > 1 ? 's' : ''
-              } waiting for approval'
+                  ? '$pendingCount pending registration${pendingCount > 1 ? 's' : ''} waiting for approval'
                   : 'Approve or reject pending registrations',
               iconColor: pendingCount > 0 ? AppColors.error : AppColors.info,
               onTap: () => _navigateToRoute(
@@ -348,7 +388,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: AppConstants.paddingMedium,
       mainAxisSpacing: AppConstants.paddingMedium,
-      childAspectRatio: 1.15,
+      childAspectRatio: 1.3,
       children: [
         QuickActionCard(
           icon: Icons.inventory_2_rounded,

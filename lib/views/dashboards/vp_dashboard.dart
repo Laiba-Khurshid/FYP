@@ -9,11 +9,11 @@ import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
 import 'package:project/viewmodels/auth_viewmodel.dart';
+import 'package:project/viewmodels/notification_viewmodel.dart';
 
 import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
 import 'package:project/widgets/quick_action_card.dart';
-import 'package:project/widgets/summary_card.dart';
 
 class VicePrincipalDashboard extends StatefulWidget {
   const VicePrincipalDashboard({super.key});
@@ -31,6 +31,18 @@ class _VicePrincipalDashboardState extends State<VicePrincipalDashboard> {
     BottomNavItem(icon: Icons.bar_chart_outlined, activeIcon: Icons.bar_chart_rounded, label: 'Reports'),
     BottomNavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final user = context.read<AuthViewModel>().currentUser;
+      if (user != null) {
+        context.read<NotificationViewModel>().subscribe(uid: user.uid, role: user.role);
+      }
+    });
+  }
 
   Future<void> _handleRefresh(BuildContext context) {
     return context.read<AuthViewModel>().refreshUserProfile();
@@ -74,11 +86,10 @@ class _VicePrincipalDashboardState extends State<VicePrincipalDashboard> {
       Navigator.of(context).pushNamed(AppRoutes.reportsScreen);
       return;
     }
-    if (_bottomNavItems[index].label == 'Profile') {
+    if (index == 3) {
       Navigator.of(context).pushNamed(AppRoutes.profileScreen);
       return;
     }
-    _showComingSoon(_bottomNavItems[index].label);
   }
 
   void _closeDrawerThen(String feature) {
@@ -96,9 +107,47 @@ class _VicePrincipalDashboardState extends State<VicePrincipalDashboard> {
       appBar: AppBar(
         title: Text('Vice Principal Dashboard', style: AppStyles.heading4()),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+          // ============================================================
+          // NOTIFICATION ICON WITH GREEN BADGE
+          // ============================================================
+          Consumer<NotificationViewModel>(
+            builder: (context, notificationVM, child) {
+              final unreadCount = notificationVM.unreadCount;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none_rounded),
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           const SizedBox(width: AppConstants.paddingSmall),
         ],
@@ -142,10 +191,9 @@ class _VicePrincipalDashboardState extends State<VicePrincipalDashboard> {
           children: [
             _VicePrincipalWelcomeHeader(user: user),
             const SizedBox(height: AppConstants.paddingLarge),
-            Text('Overview', style: AppStyles.heading4()),
-            const SizedBox(height: AppConstants.paddingMedium),
-            _buildStatsGrid(),
-            const SizedBox(height: AppConstants.paddingLarge),
+            // ============================================================
+            // OVERVIEW SECTION REMOVED
+            // ============================================================
             Text('Quick Actions', style: AppStyles.heading4()),
             const SizedBox(height: AppConstants.paddingMedium),
             _buildQuickActionsGrid(authViewModel),
@@ -174,31 +222,6 @@ class _VicePrincipalDashboardState extends State<VicePrincipalDashboard> {
     );
   }
 
-  Widget _buildStatsGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: AppConstants.paddingMedium,
-      mainAxisSpacing: AppConstants.paddingMedium,
-      childAspectRatio: 1.35,
-      children: const [
-        SummaryCard(
-          icon: Icons.priority_high_rounded,
-          title: 'Escalated Complaints',
-          count: '—',
-          accentColor: AppColors.statusEscalated,
-        ),
-        SummaryCard(
-          icon: Icons.bar_chart_rounded,
-          title: 'Reports',
-          count: '—',
-          accentColor: AppColors.secondary,
-        ),
-      ],
-    );
-  }
-
   Widget _buildQuickActionsGrid(AuthViewModel authViewModel) {
     return GridView.count(
       crossAxisCount: 2,
@@ -206,7 +229,7 @@ class _VicePrincipalDashboardState extends State<VicePrincipalDashboard> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: AppConstants.paddingMedium,
       mainAxisSpacing: AppConstants.paddingMedium,
-      childAspectRatio: 1.15,
+      childAspectRatio: 1.3,
       children: [
         QuickActionCard(
           icon: Icons.report_problem_rounded,
@@ -259,7 +282,7 @@ class _VicePrincipalWelcomeHeader extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundColor: AppColors.textOnPrimary.withOpacity(0.2),
+            backgroundColor: AppColors.textOnPrimary.withValues(alpha: 0.2),
             backgroundImage: (user.profileImage != null && (user.profileImage as String).isNotEmpty)
                 ? NetworkImage(user.profileImage as String)
                 : null,
@@ -284,19 +307,19 @@ class _VicePrincipalWelcomeHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${user.department}',
-                  style: AppStyles.bodySmall(color: AppColors.textOnPrimary.withOpacity(0.9)),
+                  style: AppStyles.bodySmall(color: AppColors.textOnPrimary.withValues(alpha: 0.9)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textOnPrimary.withOpacity(0.85)),
+                    Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textOnPrimary.withValues(alpha: 0.85)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         todayLabel,
-                        style: AppStyles.caption(color: AppColors.textOnPrimary.withOpacity(0.85)),
+                        style: AppStyles.caption(color: AppColors.textOnPrimary.withValues(alpha: 0.85)),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

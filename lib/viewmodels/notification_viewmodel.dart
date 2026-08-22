@@ -23,6 +23,10 @@ class NotificationViewModel extends ChangeNotifier {
   List<NotificationModel> get notifications => _notifications;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  // ================================================================
+  // UNREAD COUNT - ADDED FOR BADGE
+  // ================================================================
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
   /// Subscribes to the notifications visible to the current user. Safe

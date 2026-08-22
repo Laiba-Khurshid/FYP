@@ -7,6 +7,7 @@ import 'package:project/core/utils/app_colors.dart';
 import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 import 'package:project/viewmodels/auth_viewmodel.dart';
+import 'package:project/viewmodels/notification_viewmodel.dart';
 import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
 import 'package:project/widgets/dashboard_card.dart';
@@ -28,6 +29,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
     BottomNavItem(icon: Icons.report_problem_outlined, activeIcon: Icons.report_problem_rounded, label: 'Complaints'),
     BottomNavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final user = context.read<AuthViewModel>().currentUser;
+      if (user != null) {
+        context.read<NotificationViewModel>().subscribe(uid: user.uid, role: user.role);
+      }
+    });
+  }
 
   Future<void> _handleRefresh(BuildContext context) {
     return context.read<AuthViewModel>().refreshUserProfile();
@@ -87,7 +100,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final authViewModel = context.watch<AuthViewModel>();
     final user = authViewModel.currentUser;
 
-
     return Theme(
       data: ThemeData.light().copyWith(
         useMaterial3: true,
@@ -129,10 +141,47 @@ class _StudentDashboardState extends State<StudentDashboard> {
         appBar: AppBar(
           title: Text('Student Dashboard', style: AppStyles.heading4()),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.notifications_none_rounded),
-              onPressed: () =>
-                  Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+            // ============================================================
+            // NOTIFICATION ICON WITH BADGE
+            // ============================================================
+            Consumer<NotificationViewModel>(
+              builder: (context, notificationVM, child) {
+                final unreadCount = notificationVM.unreadCount;
+                return Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_none_rounded),
+                      onPressed: () =>
+                          Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+                    ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: 4,
+                        top: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            unreadCount > 9 ? '9+' : '$unreadCount',
+                            style: TextStyle(
+                              color: AppColors.textOnPrimary,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
             const SizedBox(width: AppConstants.paddingSmall),
           ],
@@ -262,7 +311,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: AppConstants.paddingMedium,
       mainAxisSpacing: AppConstants.paddingMedium,
-      childAspectRatio: 1.3, // ✅ CHANGE: 1.15 se 1.3
+      childAspectRatio: 1.3,
       children: [
         QuickActionCard(
           icon: Icons.inventory_2_rounded,
@@ -317,7 +366,7 @@ class _StudentWelcomeHeader extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundColor: AppColors.textOnPrimary.withOpacity(0.2),
+            backgroundColor: AppColors.textOnPrimary.withValues(alpha: 0.2),
             backgroundImage: (user.profileImage != null && (user.profileImage as String).isNotEmpty)
                 ? NetworkImage(user.profileImage as String)
                 : null,
@@ -342,19 +391,19 @@ class _StudentWelcomeHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${user.department}',
-                  style: AppStyles.bodySmall(color: AppColors.textOnPrimary.withOpacity(0.9)),
+                  style: AppStyles.bodySmall(color: AppColors.textOnPrimary.withValues(alpha: 0.9)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textOnPrimary.withOpacity(0.85)),
+                    Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textOnPrimary.withValues(alpha: 0.85)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         todayLabel,
-                        style: AppStyles.caption(color: AppColors.textOnPrimary.withOpacity(0.85)),
+                        style: AppStyles.caption(color: AppColors.textOnPrimary.withValues(alpha: 0.85)),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

@@ -9,6 +9,7 @@ import 'package:project/core/utils/app_constants.dart';
 import 'package:project/core/utils/app_styles.dart';
 
 import 'package:project/viewmodels/auth_viewmodel.dart';
+import 'package:project/viewmodels/notification_viewmodel.dart';
 
 import 'package:project/widgets/bottom_navbar.dart';
 import 'package:project/widgets/custom_drawer.dart';
@@ -30,6 +31,18 @@ class _HodDashboardState extends State<HodDashboard> {
     BottomNavItem(icon: Icons.report_problem_outlined, activeIcon: Icons.report_problem_rounded, label: 'Complaints'),
     BottomNavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final user = context.read<AuthViewModel>().currentUser;
+      if (user != null) {
+        context.read<NotificationViewModel>().subscribe(uid: user.uid, role: user.role);
+      }
+    });
+  }
 
   Future<void> _handleRefresh(BuildContext context) {
     return context.read<AuthViewModel>().refreshUserProfile();
@@ -94,9 +107,47 @@ class _HodDashboardState extends State<HodDashboard> {
       appBar: AppBar(
         title: Text('HOD Dashboard', style: AppStyles.heading4()),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+          // ============================================================
+          // NOTIFICATION ICON WITH GREEN BADGE
+          // ============================================================
+          Consumer<NotificationViewModel>(
+            builder: (context, notificationVM, child) {
+              final unreadCount = notificationVM.unreadCount;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none_rounded),
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed(AppRoutes.notificationsScreen),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           const SizedBox(width: AppConstants.paddingSmall),
         ],
@@ -147,10 +198,6 @@ class _HodDashboardState extends State<HodDashboard> {
             // ============================================================
             // DEPARTMENT OVERVIEW REMOVED
             // ============================================================
-            // Text('Department Overview', style: AppStyles.heading4()),  // REMOVED
-            // const SizedBox(height: AppConstants.paddingMedium),
-            // _buildStatsGrid(),  // REMOVED
-            // const SizedBox(height: AppConstants.paddingLarge),
             Text('Quick Actions', style: AppStyles.heading4()),
             const SizedBox(height: AppConstants.paddingMedium),
             _buildQuickActionsGrid(authViewModel),
@@ -186,7 +233,7 @@ class _HodDashboardState extends State<HodDashboard> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: AppConstants.paddingMedium,
       mainAxisSpacing: AppConstants.paddingMedium,
-      childAspectRatio: 1.15,
+      childAspectRatio: 1.3,
       children: [
         QuickActionCard(
           icon: Icons.inventory_2_rounded,

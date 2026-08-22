@@ -85,6 +85,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
     }
 
+    // ============================================================
+    // VP, PRINCIPAL, HOD, ADMIN KE LIYE DEPARTMENT HIDE KAREIN
+    // ============================================================
+    final isVP = profile.role == AppConstants.roleVicePrincipal;
+    final isPrincipal = profile.role == AppConstants.rolePrincipal;
+    final isHOD = profile.role == AppConstants.roleHOD;
+    final isAdmin = profile.role == AppConstants.roleAdmin;
+    final showDepartment = !(isVP || isPrincipal || isHOD || isAdmin);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: Text('Edit Profile', style: AppStyles.heading4())),
@@ -96,9 +105,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ============================================================
-                // SIRF NAME, PHONE, EMAIL, DEPARTMENT - KOI AVATAR NAHI
-                // ============================================================
                 CustomTextField(
                   label: 'Full Name',
                   controller: _nameController,
@@ -125,13 +131,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   prefixIcon: Icons.email_outlined,
                   enabled: false,
                 ),
-                const SizedBox(height: AppConstants.paddingMedium),
-                CustomTextField(
-                  label: 'Department (read-only)',
-                  controller: TextEditingController(text: profile.department),
-                  prefixIcon: Icons.apartment_rounded,
-                  enabled: false,
-                ),
+                // ============================================================
+                // DEPARTMENT - SIRF STUDENT, TEACHER KE LIYE
+                // ============================================================
+                if (showDepartment) ...[
+                  const SizedBox(height: AppConstants.paddingMedium),
+                  CustomTextField(
+                    label: 'Department (read-only)',
+                    controller: TextEditingController(text: profile.department),
+                    prefixIcon: Icons.apartment_rounded,
+                    enabled: false,
+                  ),
+                ],
                 const SizedBox(height: AppConstants.paddingXLarge),
                 CustomButton(
                   label: 'Save Changes',
